@@ -56,7 +56,7 @@ mod tests {
     }
 
     #[test]
-    fn literals() {
+    fn eval_literals() {
         assert_eq!(Value::Int(101), eval(&parse("101")));
         assert_eq!(Value::Int(1011), eval(&parse("1011")));
         assert_eq!(Value::Int(99), eval(&parse("99")));
@@ -65,14 +65,14 @@ mod tests {
     }
 
     #[test]
-    fn atom() {
+    fn eval_atom() {
         assert_eq!(Value::Bool(true), eval(&parse("(atom (quote abc))")));
         assert_eq!(Value::Bool(false), eval(&parse("(atom (quote (quote a b c)))")));
         assert_eq!(Value::Bool(false), eval(&parse("(atom (quote ()))")));
     }
 
     #[test]
-    fn quote() {
+    fn eval_quote() {
         assert_eq!(Value::Exp(&parser::Exp::Atom("101".to_owned())), eval(&parse("(quote 101)")));
         assert_eq!(Value::Exp(&parser::Exp::Atom("foo".to_owned())), eval(&parse("(quote foo)")));
         assert_eq!(Value::Exp(
