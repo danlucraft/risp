@@ -36,6 +36,12 @@ pub fn eval<'a>(exp: &parser::Exp) -> Value {
                 return Value::Int(i32::from_str_radix(a, 10).unwrap())
 
             }
+            if a == "true" {
+                return Value::Bool(true)
+            }
+            if a == "false" {
+                return Value::Bool(false)
+            }
         }
     }
     return Value::Int(101);
@@ -54,6 +60,8 @@ mod tests {
         assert_eq!(Value::Int(101), eval(&parse("101")));
         assert_eq!(Value::Int(1011), eval(&parse("1011")));
         assert_eq!(Value::Int(99), eval(&parse("99")));
+        assert_eq!(Value::Bool(true), eval(&parse("true")));
+        assert_eq!(Value::Bool(false), eval(&parse("false")));
     }
 
     #[test]
