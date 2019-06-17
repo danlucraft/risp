@@ -4,7 +4,8 @@ use regex::Regex;
 #[derive(Debug,PartialEq,Eq)]
 pub enum Value<'a> {
     Exp(&'a parser::Exp),
-    Int(i32)
+    Int(i32),
+    Bool(bool)
 }
 
 pub fn eval<'a>(exp: &parser::Exp) -> Value {
@@ -15,6 +16,13 @@ pub fn eval<'a>(exp: &parser::Exp) -> Value {
             if let parser::Exp::Atom(a) = first {
                 match a.as_ref() {
                     "quote" => return Value::Exp(&v[1]),
+                    "atom" => {
+                        if let Value::Exp(parser::Exp::Atom(_)) = eval(&v[1]) {
+                            return Value::Bool(true)
+                        } else {
+                            return Value::Bool(false)
+                        }
+                    },
                     _ => {
                         println!("Don't know how yet");
                     }
@@ -46,6 +54,13 @@ mod tests {
         assert_eq!(Value::Int(101), eval(&parse("101")));
         assert_eq!(Value::Int(1011), eval(&parse("1011")));
         assert_eq!(Value::Int(99), eval(&parse("99")));
+    }
+
+    #[test]
+    fn atom() {
+        assert_eq!(Value::Bool(true), eval(&parse("(atom (quote abc))")));
+        assert_eq!(Value::Bool(false), eval(&parse("(atom (quote (quote a b c)))")));
+        assert_eq!(Value::Bool(false), eval(&parse("(atom (quote ()))")));
     }
 
     #[test]
