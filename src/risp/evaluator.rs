@@ -23,6 +23,40 @@ pub fn eval<'a>(exp: &parser::Exp) -> Value {
                             return Value::Bool(false)
                         }
                     },
+                    "eq" => {
+                        if let Value::Exp(x_atom) = eval(&v[1]) {
+                            if let parser::Exp::Atom(x) = x_atom {
+                                if let Value::Exp(y_atom) = eval(&v[2]) {
+                                    if let parser::Exp::Atom(y) = y_atom {
+                                        if x == y {
+                                            return Value::Bool(true);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if let Value::Exp(x_list) = eval(&v[1]) {
+                            if let parser::Exp::List(x) = x_list {
+                                if let Value::Exp(y_list) = eval(&v[2]) {
+                                    if let parser::Exp::List(y) = y_list {
+                                        if x.len() == 0 && y.len() == 0 {
+                                            return Value::Bool(true);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if let Value::Bool(xb) = eval(&v[1]) {
+                            if let Value::Bool(yb) = eval(&v[2]) {
+                                if xb == yb {
+                                    return Value::Bool(true);
+                                }
+                            }
+                        }
+                        return Value::Bool(false);
+                    }
                     _ => {
                         println!("Don't know how yet");
                     }
@@ -34,7 +68,6 @@ pub fn eval<'a>(exp: &parser::Exp) -> Value {
         parser::Exp::Atom(a) => {
             if int_literal_re.is_match(a) {
                 return Value::Int(i32::from_str_radix(a, 10).unwrap())
-
             }
             if a == "true" {
                 return Value::Bool(true)
@@ -62,6 +95,17 @@ mod tests {
         assert_eq!(Value::Int(99), eval(&parse("99")));
         assert_eq!(Value::Bool(true), eval(&parse("true")));
         assert_eq!(Value::Bool(false), eval(&parse("false")));
+    }
+
+    #[test]
+    fn eval_eq() {
+        assert_eq!(Value::Bool(true), eval(&parse("(eq (quote abc) (quote abc))")));
+        assert_eq!(Value::Bool(false), eval(&parse("(eq (quote abc) (quote def))")));
+        assert_eq!(Value::Bool(false), eval(&parse("(eq (quote (a b c)) (quote def))")));
+        assert_eq!(Value::Bool(true), eval(&parse("(eq (quote ()) (quote ()))")));
+        assert_eq!(Value::Bool(true), eval(&parse("(eq true true)")));
+        assert_eq!(Value::Bool(true), eval(&parse("(eq false false)")));
+        assert_eq!(Value::Bool(false), eval(&parse("(eq true false)")));
     }
 
     #[test]
