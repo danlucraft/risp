@@ -9,7 +9,7 @@ pub enum Exp {
 
 fn consume_whitespace(chars: &mut Peekable<Chars>) -> i32 {
     let mut c = 0;
-    while chars.peek() == Some(&' ') {
+    while chars.peek() == Some(&' ') || chars.peek() == Some(&'\n') {
         chars.next();
         c += 1;
     }
@@ -107,6 +107,7 @@ mod tests {
         assert_eq!(Ok(Exp::List(vec!())), parse_list(&mut "()".chars().peekable()));
         assert_eq!(Ok(Exp::List(vec!())), parse_list(&mut "  (  )   ".chars().peekable()));
         assert_eq!(Ok(Exp::List(vec!(Exp::Atom("a".to_owned())))), parse_list(&mut "(a)".chars().peekable()));
+        assert_eq!(Ok(Exp::List(vec!(Exp::Atom("a".to_owned())))), parse_list(&mut " \n (a\n)".chars().peekable()));
         assert_eq!(Ok(Exp::List(vec!(Exp::Atom("a".to_owned()), Exp::Atom("b".to_owned()), Exp::Atom("c".to_owned())))), parse_list(&mut "(a b c)".chars().peekable()));
     }
 
