@@ -20,7 +20,7 @@ fn parse_atom(chars: &mut Peekable<Chars>) -> Result<Exp, String> {
     let mut s = String::new();
     consume_whitespace(chars);
     let mut ch: Option<char> = chars.peek().cloned();
-    while ch.is_some() && ch != Some(')') && ch != Some(' ') {
+    while ch.is_some() && ch != Some(')') && ch != Some('(')&& ch != Some(' ') {
         s.push(ch.unwrap());
         chars.next();
         ch = chars.peek().cloned();
@@ -108,13 +108,19 @@ mod tests {
     }
 
     #[test]
+    fn parsing_lists_error() {
+        assert_eq!(Err("Expected )".to_owned()), parse_list(&mut "(".chars().peekable()));
+        assert_eq!(Err("Expected )".to_owned()), parse_list(&mut "(()".chars().peekable()));
+        assert_eq!(Err("Expected (".to_owned()), parse_list(&mut ")".chars().peekable()));
+    }
+
+    #[test]
     fn parsing_atoms() {
         assert_eq!(Ok(Exp::Atom("hello".to_owned())), parse_atom(&mut "hello".chars().peekable()));
         assert_eq!(Err("No atom found".to_owned()), parse_atom(&mut "".chars().peekable()));
         assert_eq!(Ok(Exp::Atom("hello".to_owned())), parse_atom(&mut "hello world".chars().peekable()));
         assert_eq!(Ok(Exp::Atom("+".to_owned())), parse_atom(&mut "+ 1 2".chars().peekable()));
-
         assert_eq!(Ok(Exp::Atom("hello".to_owned())), parse_atom(&mut "  hello".chars().peekable()));
-
+        assert_eq!(Ok(Exp::Atom("hi".to_owned())), parse_atom(&mut "  hi(ho".chars().peekable()));
     }
 }
