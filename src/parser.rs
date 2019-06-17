@@ -1,7 +1,7 @@
 use std::str::Chars;
 use std::iter::Peekable;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Exp {
     Atom(String),
     List(Vec<Exp>)
@@ -25,7 +25,11 @@ fn parse_atom(chars: &mut Peekable<Chars>) -> Result<Exp, String> {
         chars.next();
         ch = chars.peek().cloned();
     }
-    Ok(Exp::Atom(s))
+    if s.len() == 0 {
+        Err("No atom found".to_owned())
+    } else {
+        Ok(Exp::Atom(s))
+    }
 }
 
 fn parse_inner_list(chars: &mut Peekable<Chars>) -> Result<Vec<Exp>, String> {
@@ -68,5 +72,49 @@ pub fn parse_expression(chars: &mut Peekable<Chars>) -> Result<Exp, String> {
         return parse_list(chars);
     } else {
         return parse_atom(chars)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parsing_expressions() {
+        assert_eq!(Ok(
+            Exp::List(vec!(
+                Exp::Atom("a".to_owned()),
+                Exp::List(vec!(
+                    Exp::Atom("+".to_owned()),
+                    Exp::Atom("1".to_owned()),
+                    Exp::Atom("2".to_owned())
+                )),
+                Exp::Atom("c".to_owned())
+            ))), parse_list(&mut "(a (+ 1 2) c)".chars().peekable()));
+
+        assert_eq!(Ok(
+            Exp::List(vec!(
+                Exp::Atom("a".to_owned()),
+                Exp::Atom("c".to_owned())
+            ))), parse_list(&mut " (  a  c )".chars().peekable()));
+    }
+
+    #[test]
+    fn parsing_lists() {
+        assert_eq!(Ok(Exp::List(vec!())), parse_list(&mut "()".chars().peekable()));
+        assert_eq!(Ok(Exp::List(vec!())), parse_list(&mut "  (  )   ".chars().peekable()));
+        assert_eq!(Ok(Exp::List(vec!(Exp::Atom("a".to_owned())))), parse_list(&mut "(a)".chars().peekable()));
+        assert_eq!(Ok(Exp::List(vec!(Exp::Atom("a".to_owned()), Exp::Atom("b".to_owned()), Exp::Atom("c".to_owned())))), parse_list(&mut "(a b c)".chars().peekable()));
+    }
+
+    #[test]
+    fn parsing_atoms() {
+        assert_eq!(Ok(Exp::Atom("hello".to_owned())), parse_atom(&mut "hello".chars().peekable()));
+        assert_eq!(Err("No atom found".to_owned()), parse_atom(&mut "".chars().peekable()));
+        assert_eq!(Ok(Exp::Atom("hello".to_owned())), parse_atom(&mut "hello world".chars().peekable()));
+        assert_eq!(Ok(Exp::Atom("+".to_owned())), parse_atom(&mut "+ 1 2".chars().peekable()));
+
+        assert_eq!(Ok(Exp::Atom("hello".to_owned())), parse_atom(&mut "  hello".chars().peekable()));
+
     }
 }
