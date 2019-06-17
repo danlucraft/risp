@@ -12,8 +12,13 @@ pub fn eval<'a>(exp: &parser::Exp) -> Value {
     match exp {
         parser::Exp::List(v) => {
             let first = &v[0];
-            if first == &parser::Exp::Atom("quote".to_owned()) {
-                return Value::Exp(&v[1])
+            if let parser::Exp::Atom(a) = first {
+                match a.as_ref() {
+                    "quote" => return Value::Exp(&v[1]),
+                    _ => {
+                        println!("Don't know how yet");
+                    }
+                }
             } else {
                 println!("Not quote")
             }
