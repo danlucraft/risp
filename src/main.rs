@@ -15,7 +15,7 @@ fn main() {
     let line = read_line();
     let exp = parser::parse_expression(&mut line.chars().peekable()).unwrap();
     println!("{:?}", exp);
-    let result = evaluator::eval(exp);
+    let result = evaluator::eval(&exp);
     println!("{:?}", result);
 }
 
