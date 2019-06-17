@@ -13,7 +13,7 @@ fn read_line() -> String {
 fn main() {
     let line = read_line();
     println!("{}", line);
-    let exp = parser::parse_expression(&mut line.chars().peekable());
+    let exp = parser::parse_expression(&mut line.chars().peekable()).unwrap();
     println!("{:?}", exp);
 }
 

@@ -47,7 +47,6 @@ fn parse_inner_list(chars: &mut Peekable<Chars>) -> Result<Vec<Exp>, String> {
 fn parse_list(chars: &mut Peekable<Chars>) -> Result<Exp, String> {
     consume_whitespace(chars);
     let ch: Option<&char> = chars.peek();
-    println!("parse_list: {:?}", ch);
     if ch == Some(&'(') {
         chars.next();
         let v = parse_inner_list(chars).unwrap();
@@ -65,9 +64,7 @@ fn parse_list(chars: &mut Peekable<Chars>) -> Result<Exp, String> {
 pub fn parse_expression(chars: &mut Peekable<Chars>) -> Result<Exp, String> {
     consume_whitespace(chars);
     let ch: Option<&char> = chars.peek();
-    println!("parse_expression: {:?}", ch);
     if ch == Some(&'(') {
-        println!("Spotted list start");
         return parse_list(chars);
     } else {
         return parse_atom(chars)
