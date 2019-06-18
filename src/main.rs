@@ -1,7 +1,7 @@
 use std::io::{stdin, Write, stdout};
 
 mod risp;
-use risp::{parser, evaluator};
+use risp::{parser, evaluator, to_string};
 
 fn read_line() -> String {
     print!(">> ");
@@ -16,7 +16,7 @@ fn main() {
     let exp = parser::parse_expression(&mut line.chars().peekable()).unwrap();
     println!("{:?}", exp);
     let result = evaluator::eval(&exp);
-    println!("{:?}", result);
+    println!("{}", to_string::to_string(result));
 }
 
 
