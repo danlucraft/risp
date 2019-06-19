@@ -36,21 +36,13 @@ mod tests {
     use super::*;
     use crate::risp::parser;
     use crate::risp::evaluator::eval;
+    use crate::risp::to_string::to_string;
 
     #[test]
     fn test_label() {
         assert_eq!(
-            Exp::List(vec!(
-                Exp::Atom("a".to_owned()),
-                Exp::Atom("m".to_owned()),
-                Exp::List(vec!(
-                    Exp::Atom("a".to_owned()),
-                    Exp::Atom("m".to_owned()),
-                    Exp::Atom("c".to_owned())
-                )),
-                Exp::Atom("d".to_owned())
-            )),
-            eval(&parser::parse(r#"
+            "(a m (a m c) d)",
+            to_string(&eval(&parser::parse(r#"
             (
                 (label subst (lambda (x y z)
                                (cond (eq z '()) '()
@@ -60,7 +52,7 @@ mod tests {
                                                       (subst x y (cdr z))))))
                 'm 'b '(a b (a b c) d)
             )
-            "#).unwrap(), &mut Env::new())
+            "#).unwrap(), &mut Env::new()))
         )
 
     }

@@ -43,115 +43,58 @@ pub fn eval<'a>(exp: &Exp, env: &mut Env) -> Exp {
 mod tests {
     use super::*;
     use crate::risp::parser;
+    use crate::risp::to_string::to_string;
 
     fn parse(code: &str) -> Exp {
         parser::parse_expression(&mut code.chars().peekable()).unwrap()
     }
 
+    fn run(code: &str) -> String {
+        to_string(&eval(&parse(code), &mut Env::new()))
+    }
+
     #[test]
     fn eval_lambda() {
-        assert_eq!(
-            Exp::List(vec!(
-                Exp::Int(1),
-                Exp::Int(10),
-            )),
-            eval(&parse("( (lambda () (cons 1 '(10))) 2)"), &mut Env::new())
-        );
+        assert_eq!( "(1 10)", run("( (lambda () (cons 1 '(10))) 2)") );
     }
 
     #[test]
     fn eval_lambda_with_args() {
-        assert_eq!(
-            Exp::List(vec!(
-                Exp::Int(2),
-                Exp::Int(1),
-            )),
-            eval(&parse("( (lambda (x) (cons x '(1))) 2)"), &mut Env::new())
-        );
+        assert_eq!( "(2 1)", run("( (lambda (x) (cons x '(1))) 2)") );
     }
 
     #[test]
     fn eval_lambda_with_multiple_args() {
-        assert_eq!(
-            Exp::List(vec!(
-                Exp::Bool(true),
-                Exp::Int(101),
-                Exp::Atom("hi".to_owned()),
-            )),
-            eval(&parse("( (lambda (a b c) (cons (eq a b) (cons c '(hi)))) true true 101)"), &mut Env::new())
-        );
-        assert_eq!(
-            Exp::List(vec!(
-                Exp::Atom("z".to_owned()),
-                Exp::Atom("b".to_owned()),
-                Exp::Atom("c".to_owned()),
-            )),
-            eval(&parse("( (lambda (x y) (cons x (cdr y))) 'z '(a b c))"), &mut Env::new())
-        );
+        assert_eq!( "(true 101 hi)", run("( (lambda (a b c) (cons (eq a b) (cons c '(hi)))) true true 101)") );
+        assert_eq!( "(z b c)", run("( (lambda (x y) (cons x (cdr y))) 'z '(a b c))") );
     }
 
     #[test]
     fn eval_lambda_with_lambda_parameter() {
-        assert_eq!(
-            Exp::List(vec!(
-                Exp::Atom("a".to_owned()),
-                Exp::Atom("b".to_owned()),
-                Exp::Atom("c".to_owned()),
-            )),
-            eval(&parse("( (lambda (f) (f '(b c))) (lambda (x) (cons 'a x)))"), &mut Env::new())
-        );
+        assert_eq!( "(a b c)", run("( (lambda (f) (f '(b c))) (lambda (x) (cons 'a x)))") );
     }
 
     #[test]
     fn eval_cond() {
-        assert_eq!(
-            Exp::Atom("b".to_owned()),
-            eval(&parse("(cond (eq true false) 'a (eq false false) 'b)"), &mut Env::new())
-        );
-
-        assert_eq!(
-            Exp::Atom("c".to_owned()),
-            eval(&parse("(cond (eq true false) 'a (eq false true) 'b true 'c)"), &mut Env::new())
-        );
+        assert_eq!( "b", run("(cond (eq true false) 'a (eq false false) 'b)") );
+        assert_eq!( "c", run("(cond (eq true false) 'a (eq false true) 'b true 'c)") );
     }
 
     #[test]
     fn eval_cons() {
-        assert_eq!(
-            Exp::List(vec!(
-                Exp::Atom("a".to_owned()),
-                Exp::Atom("b".to_owned()),
-                Exp::Atom("c".to_owned())
-            )),
-            eval(&parse("(cons 'a '(b c))"), &mut Env::new())
-        );
+        assert_eq!( "(a b c)", run("(cons 'a '(b c))") );
     }
 
     #[test]
     fn eval_car() {
-        assert_eq!(
-            Exp::Atom("a".to_owned()),
-            eval(&parse("(car '(a b c))"), &mut Env::new())
-        );
-        assert_eq!(
-            Exp::Int(1),
-            eval(&parse("(car '(1 2 3))"), &mut Env::new())
-        );
+        assert_eq!( "a", run("(car '(a b c))") );
+        assert_eq!( "1", run("(car '(1 2 3))") );
     }
 
     #[test]
     fn eval_cdr() {
-        assert_eq!(
-            Exp::List(vec!(
-                Exp::Atom("b".to_owned()),
-                Exp::Atom("c".to_owned())
-            )),
-            eval(&parse("(cdr '(a b c))"), &mut Env::new())
-        );
-        assert_eq!(
-            Exp::List(vec!()),
-            eval(&parse("(cdr '())"), &mut Env::new())
-        );
+        assert_eq!( "(b c)", run("(cdr '(a b c))") );
+        assert_eq!( "()", run("(cdr '())") );
     }
 
     #[test]
