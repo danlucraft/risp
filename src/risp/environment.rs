@@ -52,7 +52,7 @@ mod tests {
                                                       (subst x y (cdr z))))))
                 'm 'b '(a b (a b c) d)
             )
-            "#).unwrap(), &mut Env::new()))
+            "#)[0], &mut Env::new()))
         )
 
     }
@@ -74,17 +74,17 @@ mod tests {
     #[test]
     fn test_def() {
         let mut env = Env::new();
-        let exp = parser::parse("(def num 101)").unwrap();
-        eval(&exp, &mut env);
+        let exp = &parser::parse("(def num 101)")[0];
+        eval(exp, &mut env);
         assert_eq!(Some(Exp::Int(101)), env.get("num".to_string()));
     }
 
     #[test]
     fn test_resolving() {
         let mut env = Env::new();
-        let exp = parser::parse("(def num 101)").unwrap();
-        eval(&exp, &mut env);
-        let exp2 = parser::parse("num").unwrap();
-        assert_eq!(Exp::Int(101), eval(&exp2, &mut env));
+        let exp = &parser::parse("(def num 101)")[0];
+        eval(exp, &mut env);
+        let exp2 = &parser::parse("num")[0];
+        assert_eq!(Exp::Int(101), eval(exp2, &mut env));
     }
 }

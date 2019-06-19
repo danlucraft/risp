@@ -96,13 +96,40 @@ pub fn parse_expression(chars: &mut Peekable<Chars>) -> Result<Exp, String> {
     }
 }
 
-pub fn parse(code: &str) -> Result<Exp, String> {
-    parse_expression(&mut code.chars().peekable())
+pub fn parse(code: &str) -> Vec<Exp> {
+    let mut result = vec!();
+    let mut chars = code.chars().peekable();
+    while let Ok(exp) = parse_expression(&mut chars) {
+        result.push(exp);
+    }
+    result
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parse_multiple_expressions() {
+        assert_eq!(
+            vec!(
+                Exp::List(vec!(
+                    Exp::Atom("def".to_owned()),
+                    Exp::Atom("foo".to_owned()),
+                    Exp::Int(123),
+                )),
+                Exp::List(vec!(
+                    Exp::Atom("+".to_owned()),
+                    Exp::Int(43),
+                    Exp::Atom("foo".to_owned()),
+                ))
+            ),
+            parse(r#"
+                (def foo 123)
+                (+ 43 foo)
+            "#)
+        )
+    }
 
     #[test]
     fn parsing_expressions() {
