@@ -2,6 +2,15 @@ use crate::risp::expressions::Exp;
 use crate::risp::function::*;
 use crate::risp::environment::Env;
 
+pub fn runall(exps: &Vec<Exp>) -> Exp {
+    let mut env = Env::new();
+    let mut result = Exp::Bool(true);
+    for exp in exps {
+        result = eval(exp, &mut env);
+    }
+    result
+}
+
 pub fn eval<'a>(exp: &Exp, env: &mut Env) -> Exp {
     match exp {
         Exp::Int(_) => exp.clone(),
@@ -51,6 +60,18 @@ mod tests {
 
     fn run(code: &str) -> String {
         to_string(&eval(&parse(code), &mut Env::new()))
+    }
+
+    fn run_all(code: &str) -> String {
+        let exps = parser::parse(code);
+        let exp = runall(&exps);
+        to_string(&exp)
+    }
+
+    #[test]
+    fn eval_many() {
+        assert_eq!( "123", run_all("(def foo 123) foo") );
+        assert_eq!( "(123 999)", run_all("(def foo 123) (def bar 999) (cons foo (cons bar '()))") );
     }
 
     #[test]
