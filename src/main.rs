@@ -3,6 +3,7 @@ use std::io::{stdin, Write, stdout};
 mod risp;
 use risp::{parser, evaluator, to_string};
 use risp::environment::Env;
+use risp::loader;
 
 fn read_line() -> String {
     print!(">> ");
@@ -14,6 +15,8 @@ fn read_line() -> String {
 
 fn main() {
     let mut env = Env::new();
+    loader::eval_file("lisp/prelude.lisp".to_owned(), &mut env);
+    
     loop {
         let line = read_line();
         let exp = parser::parse_expression(&mut line.chars().peekable()).unwrap();

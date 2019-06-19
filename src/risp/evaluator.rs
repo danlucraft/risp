@@ -3,11 +3,10 @@ use crate::risp::function::*;
 use crate::risp::environment::Env;
 use crate::risp::builtins::BuiltIn;
 
-pub fn runall(exps: &Vec<Exp>) -> Exp {
-    let mut env = Env::new();
+pub fn eval_all(exps: &Vec<Exp>, env: &mut Env) -> Exp {
     let mut result = Exp::Bool(true);
     for exp in exps {
-        result = eval(exp, &mut env);
+        result = eval(exp, env);
     }
     result
 }
@@ -59,7 +58,8 @@ mod tests {
 
     fn run_all(code: &str) -> String {
         let exps = parser::parse(code);
-        let exp = runall(&exps);
+        let mut env = Env::new();
+        let exp = eval_all(&exps, &mut env);
         to_string(&exp)
     }
 
