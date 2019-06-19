@@ -81,6 +81,17 @@ pub fn parse_expression(chars: &mut Peekable<Chars>) -> Result<Exp, String> {
     consume_whitespace(chars);
     match chars.peek() {
         Some(&'(') => parse_list(chars),
+        Some(&'\'') => {
+            chars.next();
+            if let Ok(exp) = parse_expression(chars) {
+                Ok(Exp::List(vec!(
+                    Exp::Atom("quote".to_owned()),
+                    exp
+                )))
+            } else {
+                Err("Nothing".to_owned())
+            }
+        }
         _ => parse_token(chars)
     }
 }
@@ -136,6 +147,30 @@ mod tests {
         assert_eq!(Exp::Int(99), parse_expression(&mut "99".chars().peekable()).unwrap());
         assert_eq!(Exp::Bool(true), parse_expression(&mut "true".chars().peekable()).unwrap());
         assert_eq!(Exp::Bool(false), parse_expression(&mut "false".chars().peekable()).unwrap());
+    }
+
+
+    #[test]
+    fn parsing_quote() {
+        assert_eq!(Ok(
+            Exp::List(vec!(
+                Exp::Atom("quote".to_owned()),
+                Exp::Atom("hello".to_owned())
+            ))), 
+            parse_expression(&mut "'hello".chars().peekable())
+        );
+
+        assert_eq!(Ok(
+            Exp::List(vec!(
+                Exp::Atom("quote".to_owned()),
+                Exp::List(vec!(
+                    Exp::Atom("a".to_owned()),
+                    Exp::Atom("b".to_owned()),
+                    Exp::Atom("c".to_owned())
+                ))
+            ))), 
+            parse_expression(&mut "'(a b c)".chars().peekable())
+        );
     }
 
     #[test]
