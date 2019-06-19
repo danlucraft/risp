@@ -28,7 +28,7 @@ fn parse_token(chars: &mut Peekable<Chars>) -> Result<Exp, String> {
     if s.len() == 0 {
         Err("No token found".to_owned())
     } else {
-        let int_literal_re = Regex::new(r"\A[0-9]+\z").unwrap();
+        let int_literal_re = Regex::new(r"\A-?[0-9]+\z").unwrap();
 
         if int_literal_re.is_match(&s) {
             return Ok(Exp::Int(i32::from_str_radix(&s, 10).unwrap()));
