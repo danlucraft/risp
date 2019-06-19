@@ -21,5 +21,3 @@ fn main() {
         println!("{}", to_string::to_string(&result));
     }
 }
-
-

@@ -1,4 +1,5 @@
 use crate::risp::function;
+use crate::risp::builtins;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Exp {
@@ -6,6 +7,6 @@ pub enum Exp {
     List(Vec<Exp>),
     Int(i32),
     Bool(bool),
-    BuiltIn(function::BuiltIn),
+    BuiltIn(builtins::BuiltIn),
     Function(function::Function)
 }

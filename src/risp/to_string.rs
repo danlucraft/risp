@@ -1,4 +1,3 @@
-use crate::risp::parser;
 use crate::risp::expressions::Exp;
 
 pub fn to_string(value: &Exp) -> String {
@@ -27,6 +26,7 @@ pub fn to_string(value: &Exp) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::risp::parser;
 
     fn parse(code: &str) -> Exp {
         parser::parse_expression(&mut code.chars().peekable()).unwrap()
