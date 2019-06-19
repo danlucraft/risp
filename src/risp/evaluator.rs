@@ -17,11 +17,13 @@ pub fn eval<'a>(exp: &Exp, env: &mut Env) -> Exp {
             "cond"  => Exp::BuiltIn(BuiltIn::Cond),
             "lambda" => Exp::BuiltIn(BuiltIn::Lambda),
             "def"    => Exp::BuiltIn(BuiltIn::Def),
+            "label"  => Exp::BuiltIn(BuiltIn::Label),
+            "prn"    => Exp::BuiltIn(BuiltIn::Inspect),
             _       => {
                 if let Some(value) = env.get(a.to_string()) {
                     value
                 } else {
-                    panic!("Can't resolve {}", a)
+                    panic!("Can't resolve atom '{}'", a)
                 }
             }
         },

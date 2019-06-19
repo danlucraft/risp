@@ -1,6 +1,7 @@
 use crate::risp::expressions::Exp;
 use crate::risp::environment::Env;
 use crate::risp::evaluator::eval;
+use crate::risp::to_string;
 
 pub trait Callable {
     fn call(&self, args: Vec<Exp>, env: &mut Env) -> Exp;
@@ -17,12 +18,15 @@ pub enum BuiltIn {
     Cond,
     Lambda,
     Def,
+    Label,
+    Inspect,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Function {
     arg_names: Vec<Exp>, // atoms
-    body_exps: Vec<Exp> // any exps
+    body_exps: Vec<Exp>,
+    self_name: Option<String> // any exps
 }
 
 impl Callable for Function {
@@ -39,6 +43,9 @@ impl Callable for Function {
                 panic!("Arg list contained a non-atom");
             }
         }
+        if let Some(name) = &self.self_name {
+            function_env.set(name.to_string(), Exp::Function(self.clone()));
+        }
         for exp in &self.body_exps[0..(self.body_exps.len()-1)] {
             eval(&exp, &mut function_env);
         }
@@ -49,6 +56,24 @@ impl Callable for Function {
 impl Callable for BuiltIn {
     fn call(&self, args: Vec<Exp>, env: &mut Env) -> Exp {
         match self {
+            BuiltIn::Inspect => {
+                for arg in args {
+                    println!("{}", to_string::to_string(&eval(&arg, env)));
+                }
+                return Exp::Bool(true)
+            },
+            BuiltIn::Label => {
+                if let Exp::Atom(name) = &args[0] {
+                    if let Exp::Function(mut function) = eval(&args[1], env) {
+                        function.self_name = Some(name.to_owned());
+                        return Exp::Function(function);
+                    } else {
+                        panic!("Second arg to label must yield a function");
+                    }
+                } else {
+                    panic!("First arg to label should be an atom");
+                }
+            }
             BuiltIn::Def => {
                 if let Exp::Atom(name) = &args[0] {
                     let value = eval(&args[1], env);
@@ -60,7 +85,7 @@ impl Callable for BuiltIn {
             },
             BuiltIn::Lambda => {
                 if let Exp::List(arg_list) = &args[0] {
-                    return Exp::Function(Function { arg_names: arg_list.to_vec(), body_exps: args[1..].to_vec() })
+                    return Exp::Function(Function { arg_names: arg_list.to_vec(), body_exps: args[1..].to_vec(), self_name: None })
                 } else {
                     panic!("First arg to lambda should be arg list");
                 }
@@ -82,9 +107,9 @@ impl Callable for BuiltIn {
                 return Exp::List(vec!())
             },
             BuiltIn::Cons => {
+                let new_head = eval(&args[0], env);
                 if let Exp::List(lv) = eval(&args[1], env) {
                     let mut new_vec = lv.clone();
-                    let new_head = eval(&args[0], env);
                     new_vec.insert(0, new_head.clone());
                     return Exp::List(new_vec);
                 } else {
