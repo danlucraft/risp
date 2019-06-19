@@ -1,59 +1,46 @@
 use crate::risp::parser;
-use regex::Regex;
+use crate::risp::expressions::Exp;
 
-#[derive(Debug,PartialEq,Eq)]
-pub enum Value {
-    Exp(parser::Exp),
-    Int(i32),
-    Bool(bool)
-}
-
-pub fn eval<'a>(exp: &parser::Exp) -> Value {
-    let int_literal_re = Regex::new(r"\A[0-9]+\z").unwrap();
+pub fn eval<'a>(exp: &Exp) -> Exp {
     match exp {
-        parser::Exp::List(v) => {
+        Exp::Int(_) => exp.clone(),
+        Exp::Bool(_) => exp.clone(),
+        Exp::Atom(_) => panic!("Don't know how to resolve an atom yet"),
+        Exp::List(v) => {
             let first = &v[0];
-            if let parser::Exp::Atom(a) = first {
+            if let Exp::Atom(a) = first {
                 match a.as_ref() {
-                    "quote" => return Value::Exp(v[1].clone()),
+                    "quote" => return v[1].clone(),
                     "atom" => {
-                        if let Value::Exp(parser::Exp::Atom(_)) = eval(&v[1]) {
-                            return Value::Bool(true)
+                        if let Exp::Atom(_) = eval(&v[1]) {
+                            return Exp::Bool(true)
                         } else {
-                            return Value::Bool(false)
+                            return Exp::Bool(false)
                         }
                     },
                     "cons" => {
-                        if let Value::Exp(list) = eval(&v[2]) {
-                            if let parser::Exp::List(l) = list {
-                                let mut new_list = l.clone();
-                                let new_head = eval(&v[1]);
-                                new_list.insert(0, new_head);
-                                return Value::Exp(new_list);
-                            } else {
-                                panic!("cons expected a list");
-                            }
+                        if let Exp::List(lv) = eval(&v[2]) {
+                            let mut new_vec = lv.clone();
+                            let new_head = eval(&v[1]);
+                            new_vec.insert(0, new_head);
+                            return Exp::List(new_vec);
                         } else {
                             panic!("cons expected a list");
                         }
                     },
                     "car" => {
-                        if let Value::Exp(list) = eval(&v[1]) {
-                            if let parser::Exp::List(v) = &list {
-                                return Value::Exp(v[0].clone());
-                            }
+                        if let Exp::List(v) = eval(&v[1]) {
+                            return v[0].clone();
                         } else {
                             panic!("car expected a list");
                         }
                     },
                     "cdr" => {
-                        if let Value::Exp(list) = eval(&v[1]) {
-                            if let parser::Exp::List(v) = &list {
-                                if v.len() > 1 {
-                                    return Value::Exp(parser::Exp::List(v[1..].to_vec()));
-                                } else {
-                                    return Value::Exp(parser::Exp::List(vec!()));
-                                }
+                        if let Exp::List(vec) = eval(&v[1]) {
+                            if vec.len() > 1 {
+                                return Exp::List(vec[1..].to_vec());
+                            } else {
+                                return Exp::List(vec!());
                             }
                         } else {
                             panic!("car expected a list");
@@ -61,80 +48,58 @@ pub fn eval<'a>(exp: &parser::Exp) -> Value {
 
                     }
                     "eq" => {
-                        if let Value::Exp(x_atom) = eval(&v[1]) {
-                            if let parser::Exp::Atom(x) = x_atom {
-                                if let Value::Exp(y_atom) = eval(&v[2]) {
-                                    if let parser::Exp::Atom(y) = y_atom {
-                                        if x == y {
-                                            return Value::Bool(true);
-                                        }
-                                    }
+                        if let Exp::Atom(x) = eval(&v[1]) {
+                            if let Exp::Atom(y) = eval(&v[2]) {
+                                if x == y {
+                                    return Exp::Bool(true);
                                 }
                             }
                         }
 
-                        if let Value::Exp(x_list) = eval(&v[1]) {
-                            if let parser::Exp::List(x) = x_list {
-                                if let Value::Exp(y_list) = eval(&v[2]) {
-                                    if let parser::Exp::List(y) = y_list {
-                                        if x.len() == 0 && y.len() == 0 {
-                                            return Value::Bool(true);
-                                        }
-                                    }
+                        if let Exp::List(x) = eval(&v[1]) {
+                            if let Exp::List(y) = eval(&v[2]) {
+                                if x.len() == 0 && y.len() == 0 {
+                                    return Exp::Bool(true);
                                 }
                             }
                         }
 
-                        if let Value::Bool(xb) = eval(&v[1]) {
-                            if let Value::Bool(yb) = eval(&v[2]) {
+                        if let Exp::Bool(xb) = eval(&v[1]) {
+                            if let Exp::Bool(yb) = eval(&v[2]) {
                                 if xb == yb {
-                                    return Value::Bool(true);
+                                    return Exp::Bool(true);
                                 }
                             }
                         }
-                        return Value::Bool(false);
+                        return Exp::Bool(false);
                     }
                     _ => {
-                        println!("Don't know how yet");
+                        panic!("Don't know how yet");
                     }
                 }
             } else {
-                println!("Not quote")
+                panic!("Not quote")
             }
         },
-        parser::Exp::Atom(a) => {
-            if int_literal_re.is_match(a) {
-                return Value::Int(i32::from_str_radix(a, 10).unwrap())
-            }
-            if a == "true" {
-                return Value::Bool(true)
-            }
-            if a == "false" {
-                return Value::Bool(false)
-            }
-        }
     }
-    return Value::Int(101);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn parse(code: &str) -> parser::Exp {
+    fn parse(code: &str) -> Exp {
         parser::parse_expression(&mut code.chars().peekable()).unwrap()
     }
 
     #[test]
     fn eval_cons() {
         assert_eq!(
-            Value::Exp(
-                parser::Exp::List(vec!(
-                    parser::Exp::Atom("a".to_owned()),
-                    parser::Exp::Atom("b".to_owned()),
-                    parser::Exp::Atom("c".to_owned())
-                ))
-            ),
+            Exp::List(vec!(
+                Exp::Atom("a".to_owned()),
+                Exp::Atom("b".to_owned()),
+                Exp::Atom("c".to_owned())
+            )),
             eval(&parse("(cons (quote a) (quote (b c)))"))
         );
     }
@@ -142,11 +107,11 @@ mod tests {
     #[test]
     fn eval_car() {
         assert_eq!(
-            Value::Exp(parser::Exp::Atom("a".to_owned())),
+            Exp::Atom("a".to_owned()),
             eval(&parse("(car (quote (a b c)))"))
         );
         assert_eq!(
-            Value::Exp(parser::Exp::Atom("1".to_owned())),
+            Exp::Int(1),
             eval(&parse("(car (quote (1 2 3)))"))
         );
     }
@@ -154,59 +119,46 @@ mod tests {
     #[test]
     fn eval_cdr() {
         assert_eq!(
-            Value::Exp(
-                parser::Exp::List(vec!(
-                    parser::Exp::Atom("b".to_owned()),
-                    parser::Exp::Atom("c".to_owned())
-                ))
-            ),
+            Exp::List(vec!(
+                Exp::Atom("b".to_owned()),
+                Exp::Atom("c".to_owned())
+            )),
             eval(&parse("(cdr (quote (a b c)))"))
         );
         assert_eq!(
-            Value::Exp(
-                parser::Exp::List(vec!())
-            ),
+            Exp::List(vec!()),
             eval(&parse("(cdr (quote ()))"))
         );
     }
 
     #[test]
-    fn eval_literals() {
-        assert_eq!(Value::Int(101), eval(&parse("101")));
-        assert_eq!(Value::Int(1011), eval(&parse("1011")));
-        assert_eq!(Value::Int(99), eval(&parse("99")));
-        assert_eq!(Value::Bool(true), eval(&parse("true")));
-        assert_eq!(Value::Bool(false), eval(&parse("false")));
-    }
-
-    #[test]
     fn eval_eq() {
-        assert_eq!(Value::Bool(true), eval(&parse("(eq (quote abc) (quote abc))")));
-        assert_eq!(Value::Bool(false), eval(&parse("(eq (quote abc) (quote def))")));
-        assert_eq!(Value::Bool(false), eval(&parse("(eq (quote (a b c)) (quote def))")));
-        assert_eq!(Value::Bool(true), eval(&parse("(eq (quote ()) (quote ()))")));
-        assert_eq!(Value::Bool(true), eval(&parse("(eq true true)")));
-        assert_eq!(Value::Bool(true), eval(&parse("(eq false false)")));
-        assert_eq!(Value::Bool(false), eval(&parse("(eq true false)")));
+        assert_eq!(Exp::Bool(true), eval(&parse("(eq (quote abc) (quote abc))")));
+        assert_eq!(Exp::Bool(false), eval(&parse("(eq (quote abc) (quote def))")));
+        assert_eq!(Exp::Bool(false), eval(&parse("(eq (quote (a b c)) (quote def))")));
+        assert_eq!(Exp::Bool(true), eval(&parse("(eq (quote ()) (quote ()))")));
+        assert_eq!(Exp::Bool(true), eval(&parse("(eq true true)")));
+        assert_eq!(Exp::Bool(true), eval(&parse("(eq false false)")));
+        assert_eq!(Exp::Bool(false), eval(&parse("(eq true false)")));
     }
 
     #[test]
     fn eval_atom() {
-        assert_eq!(Value::Bool(true), eval(&parse("(atom (quote abc))")));
-        assert_eq!(Value::Bool(false), eval(&parse("(atom (quote (quote a b c)))")));
-        assert_eq!(Value::Bool(false), eval(&parse("(atom (quote ()))")));
+        assert_eq!(Exp::Bool(true), eval(&parse("(atom (quote abc))")));
+        assert_eq!(Exp::Bool(false), eval(&parse("(atom (quote (quote a b c)))")));
+        assert_eq!(Exp::Bool(false), eval(&parse("(atom (quote ()))")));
     }
 
     #[test]
     fn eval_quote() {
-        assert_eq!(Value::Exp(parser::Exp::Atom("101".to_owned())), eval(&parse("(quote 101)")));
-        assert_eq!(Value::Exp(parser::Exp::Atom("foo".to_owned())), eval(&parse("(quote foo)")));
-        assert_eq!(Value::Exp(
-            parser::Exp::List(vec!(
-                parser::Exp::Atom("a".to_owned()),
-                parser::Exp::Atom("b".to_owned()),
-                parser::Exp::Atom("c".to_owned())
-            ))),
+        assert_eq!(Exp::Int(101), eval(&parse("(quote 101)")));
+        assert_eq!(Exp::Atom("foo".to_owned()), eval(&parse("(quote foo)")));
+        assert_eq!(
+            Exp::List(vec!(
+                Exp::Atom("a".to_owned()),
+                Exp::Atom("b".to_owned()),
+                Exp::Atom("c".to_owned())
+            )),
             eval(&parse("(quote (a b c))"))
         );
     }

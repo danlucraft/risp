@@ -1,11 +1,7 @@
 use std::str::Chars;
 use std::iter::Peekable;
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Exp {
-    Atom(String),
-    List(Vec<Exp>)
-}
+use crate::risp::expressions::Exp;
+use regex::Regex;
 
 fn consume_whitespace(chars: &mut Peekable<Chars>) -> i32 {
     let mut c = 0;
@@ -20,7 +16,7 @@ fn is_identifier_character(ch: char) -> bool {
     return ch != ')' && ch != '(' && ch != ' ' && ch != '\n'
 }
 
-fn parse_atom(chars: &mut Peekable<Chars>) -> Result<Exp, String> {
+fn parse_token(chars: &mut Peekable<Chars>) -> Result<Exp, String> {
     let mut s = String::new();
     consume_whitespace(chars);
     let mut ch: Option<char> = chars.peek().cloned();
@@ -30,8 +26,19 @@ fn parse_atom(chars: &mut Peekable<Chars>) -> Result<Exp, String> {
         ch = chars.peek().cloned();
     }
     if s.len() == 0 {
-        Err("No atom found".to_owned())
+        Err("No token found".to_owned())
     } else {
+        let int_literal_re = Regex::new(r"\A[0-9]+\z").unwrap();
+
+        if int_literal_re.is_match(&s) {
+            return Ok(Exp::Int(i32::from_str_radix(&s, 10).unwrap()));
+        }
+        if s == "true" {
+            return Ok(Exp::Bool(true));
+        }
+        if s == "false" {
+            return Ok(Exp::Bool(false));
+        }
         Ok(Exp::Atom(s))
     }
 }
@@ -74,7 +81,7 @@ pub fn parse_expression(chars: &mut Peekable<Chars>) -> Result<Exp, String> {
     consume_whitespace(chars);
     match chars.peek() {
         Some(&'(') => parse_list(chars),
-        _ => parse_atom(chars)
+        _ => parse_token(chars)
     }
 }
 
@@ -89,11 +96,11 @@ mod tests {
                 Exp::Atom("a".to_owned()),
                 Exp::List(vec!(
                     Exp::Atom("+".to_owned()),
-                    Exp::Atom("1".to_owned()),
-                    Exp::Atom("2".to_owned())
+                    Exp::Int(1),
+                    Exp::Int(2)
                 )),
-                Exp::Atom("c".to_owned())
-            ))), parse_list(&mut "(a (+ 1 2) c)".chars().peekable()));
+                Exp::Bool(true)
+            ))), parse_list(&mut "(a (+ 1 2) true)".chars().peekable()));
 
         assert_eq!(Ok(
             Exp::List(vec!(
@@ -119,13 +126,22 @@ mod tests {
     }
 
     #[test]
+    fn parse_literals() {
+        assert_eq!(Exp::Int(101), parse_expression(&mut "101".chars().peekable()).unwrap());
+        assert_eq!(Exp::Int(1011), parse_expression(&mut "1011".chars().peekable()).unwrap());
+        assert_eq!(Exp::Int(99), parse_expression(&mut "99".chars().peekable()).unwrap());
+        assert_eq!(Exp::Bool(true), parse_expression(&mut "true".chars().peekable()).unwrap());
+        assert_eq!(Exp::Bool(false), parse_expression(&mut "false".chars().peekable()).unwrap());
+    }
+
+    #[test]
     fn parsing_atoms() {
-        assert_eq!(Ok(Exp::Atom("hello".to_owned())), parse_atom(&mut "hello".chars().peekable()));
-        assert_eq!(Err("No atom found".to_owned()), parse_atom(&mut "".chars().peekable()));
-        assert_eq!(Ok(Exp::Atom("hello".to_owned())), parse_atom(&mut "hello world".chars().peekable()));
-        assert_eq!(Ok(Exp::Atom("+".to_owned())), parse_atom(&mut "+ 1 2".chars().peekable()));
-        assert_eq!(Ok(Exp::Atom("hello".to_owned())), parse_atom(&mut "  hello".chars().peekable()));
-        assert_eq!(Ok(Exp::Atom("hi".to_owned())), parse_atom(&mut "  hi(ho".chars().peekable()));
-        assert_eq!(Ok(Exp::Atom("hi".to_owned())), parse_atom(&mut "  hi\n".chars().peekable()));
+        assert_eq!(Ok(Exp::Atom("hello".to_owned())), parse_token(&mut "hello".chars().peekable()));
+        assert_eq!(Err("No token found".to_owned()), parse_token(&mut "".chars().peekable()));
+        assert_eq!(Ok(Exp::Atom("hello".to_owned())), parse_token(&mut "hello world".chars().peekable()));
+        assert_eq!(Ok(Exp::Atom("+".to_owned())), parse_token(&mut "+ 1 2".chars().peekable()));
+        assert_eq!(Ok(Exp::Atom("hello".to_owned())), parse_token(&mut "  hello".chars().peekable()));
+        assert_eq!(Ok(Exp::Atom("hi".to_owned())), parse_token(&mut "  hi(ho".chars().peekable()));
+        assert_eq!(Ok(Exp::Atom("hi".to_owned())), parse_token(&mut "  hi\n".chars().peekable()));
     }
 }
