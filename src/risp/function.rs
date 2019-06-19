@@ -21,16 +21,28 @@ pub enum BuiltIn {
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Function {
-    args: Vec<Exp>,     // atoms
+    arg_names: Vec<Exp>, // atoms
     body_exps: Vec<Exp> // any exps
 }
 
 impl Callable for Function {
-    fn call(&self, _args: Vec<Exp>, env: &mut Env) -> Exp {
-        for exp in &self.body_exps[0..(self.body_exps.len()-1)] {
-            eval(&exp, env);
+    fn call(&self, args: Vec<Exp>, mut env: &mut Env) -> Exp {
+        let mut arg_values: Vec<Exp> = vec!();
+        for arg in args {
+            arg_values.push(eval(&arg, &mut env))
         }
-        eval(&self.body_exps[self.body_exps.len()-1], env)
+        let mut function_env = Env::new_with_parent(&mut env);
+        for (i, arg_name) in self.arg_names.iter().enumerate() {
+            if let Exp::Atom(arg_name1) = arg_name {
+                function_env.set(arg_name1.to_string(), arg_values[i].clone());
+            } else {
+                panic!("Arg list contained a non-atom");
+            }
+        }
+        for exp in &self.body_exps[0..(self.body_exps.len()-1)] {
+            eval(&exp, &mut function_env);
+        }
+        eval(&self.body_exps[self.body_exps.len()-1], &mut function_env)
     }
 }
 
@@ -48,7 +60,7 @@ impl Callable for BuiltIn {
             },
             BuiltIn::Lambda => {
                 if let Exp::List(arg_list) = &args[0] {
-                    return Exp::Function(Function { args: arg_list.to_vec(), body_exps: args[1..].to_vec() })
+                    return Exp::Function(Function { arg_names: arg_list.to_vec(), body_exps: args[1..].to_vec() })
                 } else {
                     panic!("First arg to lambda should be arg list");
                 }
@@ -94,7 +106,7 @@ impl Callable for BuiltIn {
                         return Exp::List(vec!());
                     }
                 } else {
-                    panic!("car expected a list");
+                    panic!("cdr expected a list");
                 }
 
             }

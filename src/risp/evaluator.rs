@@ -1,4 +1,3 @@
-use crate::risp::parser;
 use crate::risp::expressions::Exp;
 use crate::risp::function::*;
 use crate::risp::environment::Env;
@@ -41,11 +40,11 @@ pub fn eval<'a>(exp: &Exp, env: &mut Env) -> Exp {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::risp::parser;
 
     fn parse(code: &str) -> Exp {
         parser::parse_expression(&mut code.chars().peekable()).unwrap()
     }
-
 
     #[test]
     fn eval_lambda() {
@@ -56,13 +55,49 @@ mod tests {
             )),
             eval(&parse("( (lambda () (cons 1 (quote (10)))) 2)"), &mut Env::new())
         );
-        // assert_eq!(
-        //     Exp::List(vec!(
-        //         Exp::Int(2),
-        //         Exp::Int(1),
-        //     )),
-        //     eval(&parse("( (lambda (x) (cons x '(1))) 2)"))
-        // );
+    }
+
+    #[test]
+    fn eval_lambda_with_args() {
+        assert_eq!(
+            Exp::List(vec!(
+                Exp::Int(2),
+                Exp::Int(1),
+            )),
+            eval(&parse("( (lambda (x) (cons x (quote (1)))) 2)"), &mut Env::new())
+        );
+    }
+
+    #[test]
+    fn eval_lambda_with_multiple_args() {
+        assert_eq!(
+            Exp::List(vec!(
+                Exp::Bool(true),
+                Exp::Int(101),
+                Exp::Atom("hi".to_owned()),
+            )),
+            eval(&parse("( (lambda (a b c) (cons (eq a b) (cons c (quote (hi))))) true true 101)"), &mut Env::new())
+        );
+        assert_eq!(
+            Exp::List(vec!(
+                Exp::Atom("z".to_owned()),
+                Exp::Atom("b".to_owned()),
+                Exp::Atom("c".to_owned()),
+            )),
+            eval(&parse("( (lambda (x y) (cons x (cdr y))) (quote z) (quote (a b c)))"), &mut Env::new())
+        );
+    }
+
+    #[test]
+    fn eval_lambda_with_lambda_parameter() {
+        assert_eq!(
+            Exp::List(vec!(
+                Exp::Atom("a".to_owned()),
+                Exp::Atom("b".to_owned()),
+                Exp::Atom("c".to_owned()),
+            )),
+            eval(&parse("( (lambda (f) (f (quote (b c)))) (lambda (x) (cons (quote a) x)))"), &mut Env::new())
+        );
     }
 
     #[test]
