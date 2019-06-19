@@ -30,6 +30,7 @@ pub fn eval<'a>(exp: &Exp, env: &mut Env) -> Exp {
             "prn"    => Exp::BuiltIn(BuiltIn::Inspect),
             "+"      => Exp::BuiltIn(BuiltIn::Add),
             "-"      => Exp::BuiltIn(BuiltIn::Subtract),
+            "defun"  => Exp::BuiltIn(BuiltIn::Defun),
             _       => {
                 if let Some(value) = env.get(a.to_string()) {
                     value
@@ -44,7 +45,7 @@ pub fn eval<'a>(exp: &Exp, env: &mut Env) -> Exp {
             match first {
                 Exp::BuiltIn(builtin) => builtin.call(v[1..].to_vec(), env),
                 Exp::Function(function) => function.call(v[1..].to_vec(), env),
-                _ => panic!("Only know how to execute builtins currently")
+                _ => panic!("Only know how to execute builtins currently {:?}", first)
             }
         }
     }

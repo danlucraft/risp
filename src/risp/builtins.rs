@@ -18,12 +18,26 @@ pub enum BuiltIn {
     Label,
     Inspect,
     Add,
-    Subtract
+    Subtract,
+    Defun
 }
 
 impl Callable for BuiltIn {
     fn call(&self, args: Vec<Exp>, env: &mut Env) -> Exp {
         match self {
+            BuiltIn::Defun => {
+                if let Exp::Atom(name) = &args[0] {
+                    if let Exp::List(arg_list) = &args[1] {
+                        let function = Exp::Function(Function { arg_names: arg_list.to_vec(), body_exps: args[2..].to_vec(), self_name: None });
+                        env.set(name.to_string(), function.clone());
+                        function
+                    } else {
+                        panic!("Second arg to defun should be a list of atoms");
+                    }
+                } else {
+                    panic!("First arg to defun should be an atom");
+                }
+            }
             BuiltIn::Add => {
                 let mut result: i32 = 0;
                 for arg in args {
@@ -159,6 +173,7 @@ mod tests {
     use super::*;
     use crate::risp::parser;
     use crate::risp::to_string::to_string;
+    use crate::risp::evaluator::eval_all;
 
     fn parse(code: &str) -> Exp {
         parser::parse_expression(&mut code.chars().peekable()).unwrap()
@@ -166,6 +181,18 @@ mod tests {
 
     fn run(code: &str) -> String {
         to_string(&eval(&parse(code), &mut Env::new()))
+    }
+
+    fn run_all(code: &str) -> String {
+        let exps = parser::parse(code);
+        let mut env = Env::new();
+        let exp = eval_all(&exps, &mut env);
+        to_string(&exp)
+    }
+
+    #[test]
+    fn builtin_defun() {
+        assert_eq!( "404", run_all("(defun add4 (x) (+ x 4)) (add4 400)") );
     }
 
     #[test]
