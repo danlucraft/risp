@@ -19,8 +19,8 @@ pub fn eval<'a>(exp: &Exp, env: &mut Env) -> Exp {
             "lambda" => Exp::BuiltIn(BuiltIn::Lambda),
             "def"    => Exp::BuiltIn(BuiltIn::Def),
             _       => {
-                if let Some(value) = env.bindings.get(a) {
-                    value.clone()
+                if let Some(value) = env.get(a.to_string()) {
+                    value
                 } else {
                     panic!("Can't resolve {}", a)
                 }

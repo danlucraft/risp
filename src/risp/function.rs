@@ -40,7 +40,7 @@ impl Callable for BuiltIn {
             BuiltIn::Def => {
                 if let Exp::Atom(name) = &args[0] {
                     let value = eval(&args[1], env);
-                    env.bindings.insert(name.clone(), value);
+                    env.set(name.clone(), value);
                     return Exp::Bool(true);
                 } else {
                     panic!("First arg to def should be an atom");
