@@ -7,6 +7,8 @@ pub fn to_string(value: &Exp) -> String {
         Exp::Bool(false) => "false".to_owned(),
         Exp::Int(i) => i.to_string(),
         Exp::Atom(a) => a.clone(),
+        Exp::BuiltIn(_) => "#BuiltIn".to_owned(),
+        Exp::Function(_) => "#Function".to_owned(),
         Exp::List(v) => {
             let mut result = String::new();
             result.push_str("(");
