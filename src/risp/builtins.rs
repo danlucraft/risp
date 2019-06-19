@@ -33,7 +33,7 @@ impl Callable for BuiltIn {
                         panic!("+ expected an integer");
                     }
                 }
-                return Exp::Int(result)
+                Exp::Int(result)
             },
             BuiltIn::Subtract => {
                 if let Exp::Int(i) = eval(&args[0], env) {
@@ -43,8 +43,7 @@ impl Callable for BuiltIn {
                             result -= i;
                         }
                     }
-                    return Exp::Int(result)
-
+                    Exp::Int(result)
                 } else {
                     panic!("- expected an integer");
                 }
@@ -53,13 +52,13 @@ impl Callable for BuiltIn {
                 for arg in args {
                     println!("{}", to_string::to_string(&eval(&arg, env)));
                 }
-                return Exp::Bool(true)
+                Exp::Bool(true)
             },
             BuiltIn::Label => {
                 if let Exp::Atom(name) = &args[0] {
                     if let Exp::Function(mut function) = eval(&args[1], env) {
                         function.self_name = Some(name.to_owned());
-                        return Exp::Function(function);
+                        Exp::Function(function)
                     } else {
                         panic!("Second arg to label must yield a function");
                     }
@@ -71,14 +70,14 @@ impl Callable for BuiltIn {
                 if let Exp::Atom(name) = &args[0] {
                     let value = eval(&args[1], env);
                     env.set(name.clone(), value);
-                    return Exp::Bool(true);
+                    Exp::Bool(true)
                 } else {
                     panic!("First arg to def should be an atom");
                 }
             },
             BuiltIn::Lambda => {
                 if let Exp::List(arg_list) = &args[0] {
-                    return Exp::Function(Function { arg_names: arg_list.to_vec(), body_exps: args[1..].to_vec(), self_name: None })
+                    Exp::Function(Function { arg_names: arg_list.to_vec(), body_exps: args[1..].to_vec(), self_name: None })
                 } else {
                     panic!("First arg to lambda should be arg list");
                 }
@@ -86,9 +85,9 @@ impl Callable for BuiltIn {
             BuiltIn::Quote => return args[0].clone(),
             BuiltIn::Atom => {
                 if let Exp::Atom(_) = eval(&args[0], env) {
-                    return Exp::Bool(true)
+                    Exp::Bool(true)
                 } else {
-                    return Exp::Bool(false)
+                    Exp::Bool(false)
                 }
             },
             BuiltIn::Cond => {
@@ -97,31 +96,31 @@ impl Callable for BuiltIn {
                         return eval(&args[curr*2 + 1], env);
                     }
                 }
-                return Exp::List(vec!())
+                Exp::List(vec!())
             },
             BuiltIn::Cons => {
                 let new_head = eval(&args[0], env);
                 if let Exp::List(lv) = eval(&args[1], env) {
                     let mut new_vec = lv.clone();
                     new_vec.insert(0, new_head.clone());
-                    return Exp::List(new_vec);
+                    Exp::List(new_vec)
                 } else {
                     panic!("cons expected a list");
                 }
             },
             BuiltIn::Car => {
                 if let Exp::List(v) = eval(&args[0], env) {
-                    return v[0].clone();
+                    v[0].clone()
                 } else {
-                    panic!("car expected a list");
+                    panic!("car expected a list")
                 }
             },
             BuiltIn::Cdr => {
                 if let Exp::List(vec) = eval(&args[0], env) {
                     if vec.len() > 1 {
-                        return Exp::List(vec[1..].to_vec());
+                        Exp::List(vec[1..].to_vec())
                     } else {
-                        return Exp::List(vec!());
+                        Exp::List(vec!())
                     }
                 } else {
                     panic!("cdr expected a list");
@@ -134,28 +133,22 @@ impl Callable for BuiltIn {
 
                 if let Exp::Atom(x) = l {
                     if let Exp::Atom(y) = r {
-                        if x == y {
-                            return Exp::Bool(true);
-                        }
+                        return Exp::Bool(x == y);
                     }
                 } else if let Exp::Int(x) = l {
                     if let Exp::Int(y) = r {
                         return Exp::Bool(x == y);
                     } 
-                } else if let Exp::List(x) = eval(&args[0], env) {
-                    if let Exp::List(y) = eval(&args[1], env) {
-                        if x.len() == 0 && y.len() == 0 {
-                            return Exp::Bool(true);
-                        }
+                } else if let Exp::List(x) = l {
+                    if let Exp::List(y) = r {
+                        return Exp::Bool(x.len() == 0 && y.len() == 0);
                     }
-                } else if let Exp::Bool(xb) = eval(&args[0], env) {
-                    if let Exp::Bool(yb) = eval(&args[1], env) {
-                        if xb == yb {
-                            return Exp::Bool(true);
-                        }
+                } else if let Exp::Bool(xb) = l {
+                    if let Exp::Bool(yb) = r {
+                        return Exp::Bool(xb == yb);
                     }
                 }
-                return Exp::Bool(false);
+                Exp::Bool(false)
             }
         }
     }
