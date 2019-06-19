@@ -13,11 +13,12 @@ fn read_line() -> String {
 }
 
 fn main() {
-    let line = read_line();
-    let exp = parser::parse_expression(&mut line.chars().peekable()).unwrap();
-    println!("{:?}", exp);
-    let result = evaluator::eval(&exp, &mut Env::new());
-    println!("{}", to_string::to_string(&result));
+    loop {
+        let line = read_line();
+        let exp = parser::parse_expression(&mut line.chars().peekable()).unwrap();
+        let result = evaluator::eval(&exp, &mut Env::new());
+        println!("{}", to_string::to_string(&result));
+    }
 }
 
 
