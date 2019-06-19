@@ -23,6 +23,20 @@ pub fn eval<'a>(exp: &parser::Exp) -> Value {
                             return Value::Bool(false)
                         }
                     },
+                    "cons" => {
+                        if let Value::Exp(list) = eval(&v[2]) {
+                            if let parser::Exp::List(l) = list {
+                                let mut new_list = l.clone();
+                                let new_head = eval(&v[1]);
+                                new_list.insert(0, new_head);
+                                return Value::Exp(new_list);
+                            } else {
+                                panic!("cons expected a list");
+                            }
+                        } else {
+                            panic!("cons expected a list");
+                        }
+                    },
                     "car" => {
                         if let Value::Exp(list) = eval(&v[1]) {
                             if let parser::Exp::List(v) = &list {
@@ -31,7 +45,7 @@ pub fn eval<'a>(exp: &parser::Exp) -> Value {
                         } else {
                             panic!("car expected a list");
                         }
-                    }
+                    },
                     "cdr" => {
                         if let Value::Exp(list) = eval(&v[1]) {
                             if let parser::Exp::List(v) = &list {
@@ -109,6 +123,20 @@ mod tests {
 
     fn parse(code: &str) -> parser::Exp {
         parser::parse_expression(&mut code.chars().peekable()).unwrap()
+    }
+
+    #[test]
+    fn eval_cons() {
+        assert_eq!(
+            Value::Exp(
+                parser::Exp::List(vec!(
+                    parser::Exp::Atom("a".to_owned()),
+                    parser::Exp::Atom("b".to_owned()),
+                    parser::Exp::Atom("c".to_owned())
+                ))
+            ),
+            eval(&parse("(cons (quote a) (quote (b c)))"))
+        );
     }
 
     #[test]
