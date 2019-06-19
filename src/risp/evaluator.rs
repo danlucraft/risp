@@ -3,7 +3,7 @@ use crate::risp::expressions::Exp;
 use crate::risp::function::*;
 use crate::risp::environment::Env;
 
-pub fn eval<'a>(exp: &Exp, env: &Env) -> Exp {
+pub fn eval<'a>(exp: &Exp, env: &mut Env) -> Exp {
     match exp {
         Exp::Int(_) => exp.clone(),
         Exp::Bool(_) => exp.clone(),
@@ -17,7 +17,14 @@ pub fn eval<'a>(exp: &Exp, env: &Env) -> Exp {
             "cons"  => Exp::BuiltIn(BuiltIn::Cons),
             "cond"  => Exp::BuiltIn(BuiltIn::Cond),
             "lambda" => Exp::BuiltIn(BuiltIn::Lambda),
-            _       => panic!("Can't resolve {}", a)
+            "def"    => Exp::BuiltIn(BuiltIn::Def),
+            _       => {
+                if let Some(value) = env.bindings.get(a) {
+                    value.clone()
+                } else {
+                    panic!("Can't resolve {}", a)
+                }
+            }
         },
         Exp::BuiltIn(_) => panic!("Don't know how to evaluate a built in"),
         Exp::List(v) => {
@@ -47,7 +54,7 @@ mod tests {
                 Exp::Int(1),
                 Exp::Int(10),
             )),
-            eval(&parse("( (lambda () (cons 1 (quote (10)))) 2)"), &Env::new())
+            eval(&parse("( (lambda () (cons 1 (quote (10)))) 2)"), &mut Env::new())
         );
         // assert_eq!(
         //     Exp::List(vec!(
@@ -62,12 +69,12 @@ mod tests {
     fn eval_cond() {
         assert_eq!(
             Exp::Atom("b".to_owned()),
-            eval(&parse("(cond (eq true false) (quote a) (eq false false) (quote b))"), &Env::new())
+            eval(&parse("(cond (eq true false) (quote a) (eq false false) (quote b))"), &mut Env::new())
         );
 
         assert_eq!(
             Exp::Atom("c".to_owned()),
-            eval(&parse("(cond (eq true false) (quote a) (eq false true) (quote b) true (quote c))"), &Env::new())
+            eval(&parse("(cond (eq true false) (quote a) (eq false true) (quote b) true (quote c))"), &mut Env::new())
         );
     }
 
@@ -79,7 +86,7 @@ mod tests {
                 Exp::Atom("b".to_owned()),
                 Exp::Atom("c".to_owned())
             )),
-            eval(&parse("(cons (quote a) (quote (b c)))"), &Env::new())
+            eval(&parse("(cons (quote a) (quote (b c)))"), &mut Env::new())
         );
     }
 
@@ -87,11 +94,11 @@ mod tests {
     fn eval_car() {
         assert_eq!(
             Exp::Atom("a".to_owned()),
-            eval(&parse("(car (quote (a b c)))"), &Env::new())
+            eval(&parse("(car (quote (a b c)))"), &mut Env::new())
         );
         assert_eq!(
             Exp::Int(1),
-            eval(&parse("(car (quote (1 2 3)))"), &Env::new())
+            eval(&parse("(car (quote (1 2 3)))"), &mut Env::new())
         );
     }
 
@@ -102,43 +109,43 @@ mod tests {
                 Exp::Atom("b".to_owned()),
                 Exp::Atom("c".to_owned())
             )),
-            eval(&parse("(cdr (quote (a b c)))"), &Env::new())
+            eval(&parse("(cdr (quote (a b c)))"), &mut Env::new())
         );
         assert_eq!(
             Exp::List(vec!()),
-            eval(&parse("(cdr (quote ()))"), &Env::new())
+            eval(&parse("(cdr (quote ()))"), &mut Env::new())
         );
     }
 
     #[test]
     fn eval_eq() {
-        assert_eq!(Exp::Bool(true), eval(&parse("(eq (quote abc) (quote abc))"), &Env::new()));
-        assert_eq!(Exp::Bool(false), eval(&parse("(eq (quote abc) (quote def))"), &Env::new()));
-        assert_eq!(Exp::Bool(false), eval(&parse("(eq (quote (a b c)) (quote def))"), &Env::new()));
-        assert_eq!(Exp::Bool(true), eval(&parse("(eq (quote ()) (quote ()))"), &Env::new()));
-        assert_eq!(Exp::Bool(true), eval(&parse("(eq true true)"), &Env::new()));
-        assert_eq!(Exp::Bool(true), eval(&parse("(eq false false)"), &Env::new()));
-        assert_eq!(Exp::Bool(false), eval(&parse("(eq true false)"), &Env::new()));
+        assert_eq!(Exp::Bool(true), eval(&parse("(eq (quote abc) (quote abc))"), &mut Env::new()));
+        assert_eq!(Exp::Bool(false), eval(&parse("(eq (quote abc) (quote def))"), &mut Env::new()));
+        assert_eq!(Exp::Bool(false), eval(&parse("(eq (quote (a b c)) (quote def))"), &mut Env::new()));
+        assert_eq!(Exp::Bool(true), eval(&parse("(eq (quote ()) (quote ()))"), &mut Env::new()));
+        assert_eq!(Exp::Bool(true), eval(&parse("(eq true true)"), &mut Env::new()));
+        assert_eq!(Exp::Bool(true), eval(&parse("(eq false false)"), &mut Env::new()));
+        assert_eq!(Exp::Bool(false), eval(&parse("(eq true false)"), &mut Env::new()));
     }
 
     #[test]
     fn eval_atom() {
-        assert_eq!(Exp::Bool(true), eval(&parse("(atom (quote abc))"), &Env::new()));
-        assert_eq!(Exp::Bool(false), eval(&parse("(atom (quote (quote a b c)))"), &Env::new()));
-        assert_eq!(Exp::Bool(false), eval(&parse("(atom (quote ()))"), &Env::new()));
+        assert_eq!(Exp::Bool(true), eval(&parse("(atom (quote abc))"), &mut Env::new()));
+        assert_eq!(Exp::Bool(false), eval(&parse("(atom (quote (quote a b c)))"), &mut Env::new()));
+        assert_eq!(Exp::Bool(false), eval(&parse("(atom (quote ()))"), &mut Env::new()));
     }
 
     #[test]
     fn eval_quote() {
-        assert_eq!(Exp::Int(101), eval(&parse("(quote 101)"), &Env::new()));
-        assert_eq!(Exp::Atom("foo".to_owned()), eval(&parse("(quote foo)"), &Env::new()));
+        assert_eq!(Exp::Int(101), eval(&parse("(quote 101)"), &mut Env::new()));
+        assert_eq!(Exp::Atom("foo".to_owned()), eval(&parse("(quote foo)"), &mut Env::new()));
         assert_eq!(
             Exp::List(vec!(
                 Exp::Atom("a".to_owned()),
                 Exp::Atom("b".to_owned()),
                 Exp::Atom("c".to_owned())
             )),
-            eval(&parse("(quote (a b c))"), &Env::new())
+            eval(&parse("(quote (a b c))"), &mut Env::new())
         );
     }
 }

@@ -85,6 +85,10 @@ pub fn parse_expression(chars: &mut Peekable<Chars>) -> Result<Exp, String> {
     }
 }
 
+pub fn parse(code: &str) -> Result<Exp, String> {
+    parse_expression(&mut code.chars().peekable())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

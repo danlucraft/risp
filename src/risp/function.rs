@@ -3,7 +3,7 @@ use crate::risp::environment::Env;
 use crate::risp::evaluator::eval;
 
 pub trait Callable {
-    fn call(&self, args: Vec<Exp>, env: &Env) -> Exp;
+    fn call(&self, args: Vec<Exp>, env: &mut Env) -> Exp;
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -15,7 +15,8 @@ pub enum BuiltIn {
     Cdr,
     Cons,
     Cond,
-    Lambda
+    Lambda,
+    Def,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -25,7 +26,7 @@ pub struct Function {
 }
 
 impl Callable for Function {
-    fn call(&self, _args: Vec<Exp>, env: &Env) -> Exp {
+    fn call(&self, _args: Vec<Exp>, env: &mut Env) -> Exp {
         for exp in &self.body_exps[0..(self.body_exps.len()-1)] {
             eval(&exp, env);
         }
@@ -34,8 +35,17 @@ impl Callable for Function {
 }
 
 impl Callable for BuiltIn {
-    fn call(&self, args: Vec<Exp>, env: &Env) -> Exp {
+    fn call(&self, args: Vec<Exp>, env: &mut Env) -> Exp {
         match self {
+            BuiltIn::Def => {
+                if let Exp::Atom(name) = &args[0] {
+                    let value = eval(&args[1], env);
+                    env.bindings.insert(name.clone(), value);
+                    return Exp::Bool(true);
+                } else {
+                    panic!("First arg to def should be an atom");
+                }
+            },
             BuiltIn::Lambda => {
                 if let Exp::List(arg_list) = &args[0] {
                     return Exp::Function(Function { args: arg_list.to_vec(), body_exps: args[1..].to_vec() })
