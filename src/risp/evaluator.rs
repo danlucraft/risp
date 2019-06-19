@@ -18,6 +18,14 @@ pub fn eval<'a>(exp: &Exp) -> Exp {
                             return Exp::Bool(false)
                         }
                     },
+                    "cond" => {
+                        for curr in 0..((v.len() - 1)/ 2) {
+                            if eval(&v[1 + curr*2]) == Exp::Bool(true) {
+                                return eval(&v[1 + curr*2 + 1]);
+                            }
+                        }
+                        return Exp::List(vec!())
+                    },
                     "cons" => {
                         if let Exp::List(lv) = eval(&v[2]) {
                             let mut new_vec = lv.clone();
@@ -74,7 +82,7 @@ pub fn eval<'a>(exp: &Exp) -> Exp {
                         return Exp::Bool(false);
                     }
                     _ => {
-                        panic!("Don't know how yet");
+                        panic!("Don't know how to evaluate {} yet", a);
                     }
                 }
             } else {
@@ -90,6 +98,19 @@ mod tests {
 
     fn parse(code: &str) -> Exp {
         parser::parse_expression(&mut code.chars().peekable()).unwrap()
+    }
+
+    #[test]
+    fn eval_cond() {
+        assert_eq!(
+            Exp::Atom("b".to_owned()),
+            eval(&parse("(cond (eq true false) (quote a) (eq false false) (quote b))"))
+        );
+
+        assert_eq!(
+            Exp::Atom("c".to_owned()),
+            eval(&parse("(cond (eq true false) (quote a) (eq false true) (quote b) true (quote c))"))
+        );
     }
 
     #[test]
