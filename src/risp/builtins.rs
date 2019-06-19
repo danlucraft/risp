@@ -17,11 +17,38 @@ pub enum BuiltIn {
     Def,
     Label,
     Inspect,
+    Add,
+    Subtract
 }
 
 impl Callable for BuiltIn {
     fn call(&self, args: Vec<Exp>, env: &mut Env) -> Exp {
         match self {
+            BuiltIn::Add => {
+                let mut result: i32 = 0;
+                for arg in args {
+                    if let Exp::Int(i) = eval(&arg, env) {
+                        result += i;
+                    } else {
+                        panic!("+ expected an integer");
+                    }
+                }
+                return Exp::Int(result)
+            },
+            BuiltIn::Subtract => {
+                if let Exp::Int(i) = eval(&args[0], env) {
+                    let mut result: i32 = i;
+                    for arg in &args[1..] {
+                        if let Exp::Int(i) = eval(&arg, env) {
+                            result -= i;
+                        }
+                    }
+                    return Exp::Int(result)
+
+                } else {
+                    panic!("- expected an integer");
+                }
+            },
             BuiltIn::Inspect => {
                 for arg in args {
                     println!("{}", to_string::to_string(&eval(&arg, env)));
@@ -141,6 +168,14 @@ mod tests {
 
     fn run(code: &str) -> String {
         to_string(&eval(&parse(code), &mut Env::new()))
+    }
+
+    #[test]
+    fn eval_addition_subtraction() {
+        assert_eq!( "5", run("(+ 1 4)") );
+        assert_eq!( "7", run("(- 11 4)") );
+        assert_eq!( "112", run("(+ 1 4 7 100)") );
+        assert_eq!( "-3", run("(- 11 4 10)") );
     }
 
     #[test]
