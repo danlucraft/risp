@@ -131,12 +131,17 @@ impl Callable for BuiltIn {
             BuiltIn::Eq => {
                 let l = eval(&args[0], env);
                 let r = eval(&args[1], env);
+
                 if let Exp::Atom(x) = l {
                     if let Exp::Atom(y) = r {
                         if x == y {
                             return Exp::Bool(true);
                         }
                     }
+                } else if let Exp::Int(x) = l {
+                    if let Exp::Int(y) = r {
+                        return Exp::Bool(x == y);
+                    } 
                 } else if let Exp::List(x) = eval(&args[0], env) {
                     if let Exp::List(y) = eval(&args[1], env) {
                         if x.len() == 0 && y.len() == 0 {
@@ -231,6 +236,8 @@ mod tests {
         assert_eq!(Exp::Bool(true), eval(&parse("(eq true true)"), &mut Env::new()));
         assert_eq!(Exp::Bool(true), eval(&parse("(eq false false)"), &mut Env::new()));
         assert_eq!(Exp::Bool(false), eval(&parse("(eq true false)"), &mut Env::new()));
+        assert_eq!(Exp::Bool(true), eval(&parse("(eq 12 12)"), &mut Env::new()));
+        assert_eq!(Exp::Bool(false), eval(&parse("(eq 12 -12)"), &mut Env::new()));
     }
 
     #[test]
