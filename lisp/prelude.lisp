@@ -147,3 +147,53 @@
       'a
       '(b c d))
     '()))
+
+
+(defun inc (x) (+ x 1))
+
+(assert_eq! 2 (inc 1))
+
+
+(defun map (f x)
+  (cond (null? x) '()
+        true      (cons (f (car x)) (map f (cdr x)))))
+
+(assert_eq! '(2 3 4) (map inc '(1 2 3)))
+(assert_eq! '() (map inc '()))
+
+
+(defun filter (f x)
+  (cond (null? x) '()
+        true      (cond (f (car x)) (cons (car x) (filter f (cdr x)))
+                        true        (filter f (cdr x)))))
+
+(assert_eq! '(1 2 3) (filter int? '(a 1 2 nil true 3)))
+(assert_eq! '() (filter int? '()))
+
+
+(defun reduce (f acc x)
+  (cond (null? x) acc
+        true      (reduce f
+                          (f acc (car x))
+                          (cdr x))))
+
+(assert_eq! 6 (reduce + 0 '(1 2 3)))
+(assert_eq! 0 (reduce + 0 '()))
+
+
+(defun all? (f x)
+  (cond (null? x) true
+        true      (and (f (car x)) (all? f (cdr x)))))
+
+(assert_eq! true (all? int? '(1 2 3)))
+(assert_eq! false (all? int? '(1 2 true 3)))
+
+
+(defun any? (f x)
+  (cond (null? x)   false
+        (f (car x)) true
+        true        (any? f (cdr x))))
+
+(assert_eq! true (any? int? '(1 2 3)))
+(assert_eq! true (any? int? '(1 2 true 3)))
+(assert_eq! false (any? int? '(true nil)))
