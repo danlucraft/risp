@@ -21,12 +21,36 @@ pub enum BuiltIn {
     Subtract,
     Defun,
     Assert,
-    Do
+    Do,
+    IsInt,
+    IsBool,
+    IsNil
 }
 
 impl Callable for BuiltIn {
     fn call(&self, args: Vec<Exp>, env: &mut Env) -> Exp {
         match self {
+            BuiltIn::IsInt => {
+                if let Exp::Int(_) = eval(&args[0], env) {
+                    Exp::Bool(true)
+                } else {
+                    Exp::Bool(false)
+                }
+            },
+            BuiltIn::IsBool => {
+                if let Exp::Bool(_) = eval(&args[0], env) {
+                    Exp::Bool(true)
+                } else {
+                    Exp::Bool(false)
+                }
+            },
+            BuiltIn::IsNil => {
+                if eval(&args[0], env) == Exp::Nil {
+                    Exp::Bool(true)
+                } else {
+                    Exp::Bool(false)
+                }
+            },
             BuiltIn::Do => {
                 let mut result = Exp::Bool(true);
                 for arg in args {
@@ -194,6 +218,24 @@ mod tests {
         let mut env = Env::new();
         let exp = eval_all(&exps, &mut env);
         to_string(&exp)
+    }
+
+    #[test]
+    fn builtin_int() {
+        assert_eq!( "true", run_all("(int? 123)") );
+        assert_eq!( "false", run_all("(int? '())") );
+    }
+
+    #[test]
+    fn builtin_bool() {
+        assert_eq!( "true", run_all("(bool? true)") );
+        assert_eq!( "false", run_all("(bool? 123)") );
+    }
+
+    #[test]
+    fn builtin_nil() {
+        assert_eq!( "true", run_all("(nil? nil)") );
+        assert_eq!( "false", run_all("(nil? false)") );
     }
 
     #[test]
