@@ -44,7 +44,11 @@ impl Callable for BuiltIn {
             BuiltIn::Defun => {
                 if let Exp::Atom(name) = &args[0] {
                     if let Exp::List(arg_list) = &args[1] {
-                        let function = Exp::Function(Function { arg_names: arg_list.to_vec(), body_exps: args[2..].to_vec(), self_name: None });
+                        let function = Exp::Function(Function { 
+                            arg_names: arg_list.to_vec(), 
+                            body_exps: args[2..].to_vec(), 
+                            self_name: Some(name.to_string())
+                        });
                         env.set(name.to_string(), function.clone());
                         function
                     } else {
