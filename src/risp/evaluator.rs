@@ -31,6 +31,8 @@ pub fn eval<'a>(exp: &Exp, env: &mut Env) -> Exp {
             "+"      => Exp::BuiltIn(BuiltIn::Add),
             "-"      => Exp::BuiltIn(BuiltIn::Subtract),
             "defun"  => Exp::BuiltIn(BuiltIn::Defun),
+            "assert!" => Exp::BuiltIn(BuiltIn::Assert),
+            "do"      => Exp::BuiltIn(BuiltIn::Do),
             _       => {
                 if let Some(value) = env.get(a.to_string()) {
                     value

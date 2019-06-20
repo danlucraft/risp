@@ -19,12 +19,28 @@ pub enum BuiltIn {
     Inspect,
     Add,
     Subtract,
-    Defun
+    Defun,
+    Assert,
+    Do
 }
 
 impl Callable for BuiltIn {
     fn call(&self, args: Vec<Exp>, env: &mut Env) -> Exp {
         match self {
+            BuiltIn::Do => {
+                let mut result = Exp::Bool(true);
+                for arg in args {
+                    result = eval(&arg, env);
+                }
+                result
+            }
+            BuiltIn::Assert => {
+                if let Exp::Bool(true) = eval(&args[0], env) {
+                    return Exp::Bool(true);
+                } else {
+                    panic!("Assertion failed");
+                }
+            },
             BuiltIn::Defun => {
                 if let Exp::Atom(name) = &args[0] {
                     if let Exp::List(arg_list) = &args[1] {
@@ -170,6 +186,16 @@ mod tests {
         let mut env = Env::new();
         let exp = eval_all(&exps, &mut env);
         to_string(&exp)
+    }
+
+    #[test]
+    fn builtin_do() {
+        assert_eq!( "123", run_all("(do (def foo 123) foo)") );
+    }
+
+    #[test]
+    fn builtin_assert() {
+        assert_eq!( "true", run_all("(assert! true)") );
     }
 
     #[test]
