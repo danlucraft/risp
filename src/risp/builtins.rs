@@ -144,7 +144,11 @@ impl Callable for BuiltIn {
             },
             BuiltIn::Car => {
                 if let Exp::List(v) = eval(&args[0], env) {
-                    v[0].clone()
+                    if v.len() > 0 {
+                        v[0].clone()
+                    } else {
+                        Exp::Nil
+                    }
                 } else {
                     panic!("car expected a list")
                 }
@@ -251,6 +255,11 @@ mod tests {
     fn eval_car() {
         assert_eq!( "a", run("(car '(a b c))") );
         assert_eq!( "1", run("(car '(1 2 3))") );
+    }
+
+    #[test]
+    fn eval_car_empty_list() {
+        assert_eq!( "nil", run("(car '())") );
     }
 
     #[test]
