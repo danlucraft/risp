@@ -147,7 +147,7 @@ impl Callable for BuiltIn {
                     if v.len() > 0 {
                         v[0].clone()
                     } else {
-                        Exp::Nil
+                        Exp::List(vec!())
                     }
                 } else {
                     panic!("car expected a list")
@@ -259,7 +259,7 @@ mod tests {
 
     #[test]
     fn eval_car_empty_list() {
-        assert_eq!( "nil", run("(car '())") );
+        assert_eq!( "()", run("(car '())") );
     }
 
     #[test]
