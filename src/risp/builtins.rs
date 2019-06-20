@@ -192,9 +192,18 @@ impl Callable for BuiltIn {
 
             },
             BuiltIn::Eq => {
-                let l = eval(&args[0], env);
-                let r = eval(&args[1], env);
-                Exp::Bool(l == r)
+                if args.len() < 2 {
+                    Exp::Bool(true)
+                } else {
+                    let first = eval(&args[0], env);
+                    for arg in &args[1..] {
+                        let r = eval(&arg, env);
+                        if first != r {
+                            return Exp::Bool(false);
+                        }
+                    }
+                    Exp::Bool(true)
+                }
             }
         }
     }
@@ -314,15 +323,19 @@ mod tests {
 
     #[test]
     fn eval_eq() {
-        assert_eq!(Exp::Bool(true), eval(&parse("(eq 'abc 'abc)"), &mut Env::new()));
+        assert_eq!(Exp::Bool(true),  eval(&parse("(eq 'abc 'abc)"), &mut Env::new()));
         assert_eq!(Exp::Bool(false), eval(&parse("(eq 'abc 'def)"), &mut Env::new()));
         assert_eq!(Exp::Bool(false), eval(&parse("(eq '(a b c) 'def)"), &mut Env::new()));
-        assert_eq!(Exp::Bool(true), eval(&parse("(eq '() '())"), &mut Env::new()));
-        assert_eq!(Exp::Bool(true), eval(&parse("(eq true true)"), &mut Env::new()));
-        assert_eq!(Exp::Bool(true), eval(&parse("(eq false false)"), &mut Env::new()));
+        assert_eq!(Exp::Bool(true),  eval(&parse("(eq '() '())"), &mut Env::new()));
+        assert_eq!(Exp::Bool(true),  eval(&parse("(eq true true)"), &mut Env::new()));
+        assert_eq!(Exp::Bool(true),  eval(&parse("(eq false false)"), &mut Env::new()));
         assert_eq!(Exp::Bool(false), eval(&parse("(eq true false)"), &mut Env::new()));
-        assert_eq!(Exp::Bool(true), eval(&parse("(eq 12 12)"), &mut Env::new()));
+        assert_eq!(Exp::Bool(true),  eval(&parse("(eq 12 12)"), &mut Env::new()));
         assert_eq!(Exp::Bool(false), eval(&parse("(eq 12 -12)"), &mut Env::new()));
+        assert_eq!(Exp::Bool(true),  eval(&parse("(eq 12)"), &mut Env::new()));
+        assert_eq!(Exp::Bool(true),  eval(&parse("(eq)"), &mut Env::new()));
+        assert_eq!(Exp::Bool(true),  eval(&parse("(eq 12 12 12)"), &mut Env::new()));
+        assert_eq!(Exp::Bool(false), eval(&parse("(eq 12 12 1)"), &mut Env::new()));
     }
 
     #[test]
