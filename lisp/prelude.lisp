@@ -13,3 +13,11 @@
 (defun not (x)
   (cond x    false
         true true))
+
+(defun append (x y)
+  (cond (null? x) y
+        true      (cons (car x) (append (cdr x) y))))
+
+(defun zip (x y)
+  (cons ))
+
