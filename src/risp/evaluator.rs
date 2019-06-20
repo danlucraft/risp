@@ -15,6 +15,7 @@ pub fn eval<'a>(exp: &Exp, env: &mut Env) -> Exp {
     match exp {
         Exp::Int(_) => exp.clone(),
         Exp::Bool(_) => exp.clone(),
+        Exp::Nil => exp.clone(),
         Exp::Function(_) => exp.clone(),
         Exp::Atom(a) => match a.as_ref() {
             "quote" => Exp::BuiltIn(BuiltIn::Quote),

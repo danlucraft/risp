@@ -39,6 +39,9 @@ fn parse_token(chars: &mut Peekable<Chars>) -> Result<Exp, String> {
         if s == "false" {
             return Ok(Exp::Bool(false));
         }
+        if s == "nil" {
+            return Ok(Exp::Nil);
+        }
         Ok(Exp::Atom(s))
     }
 }
@@ -174,6 +177,7 @@ mod tests {
         assert_eq!(Exp::Int(99), parse_expression(&mut "99".chars().peekable()).unwrap());
         assert_eq!(Exp::Bool(true), parse_expression(&mut "true".chars().peekable()).unwrap());
         assert_eq!(Exp::Bool(false), parse_expression(&mut "false".chars().peekable()).unwrap());
+        assert_eq!(Exp::Nil, parse_expression(&mut "nil".chars().peekable()).unwrap());
     }
 
 

@@ -4,6 +4,7 @@ pub fn to_string(value: &Exp) -> String {
     match value {
         Exp::Bool(true) => "true".to_owned(),
         Exp::Bool(false) => "false".to_owned(),
+        Exp::Nil => "nil".to_owned(),
         Exp::Int(i) => i.to_string(),
         Exp::Atom(a) => a.clone(),
         Exp::BuiltIn(_) => "#BuiltIn".to_owned(),

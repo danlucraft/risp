@@ -7,6 +7,7 @@ pub enum Exp {
     List(Vec<Exp>),
     Int(i32),
     Bool(bool),
+    Nil,
     BuiltIn(builtins::BuiltIn),
     Function(function::Function)
 }
