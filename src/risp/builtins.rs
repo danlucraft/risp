@@ -85,10 +85,11 @@ impl Callable for BuiltIn {
             BuiltIn::Add => {
                 let mut result: i32 = 0;
                 for arg in args {
-                    if let Exp::Int(i) = eval(&arg, env) {
+                    let arg_value = eval(&arg, env);
+                    if let Exp::Int(i) = arg_value {
                         result += i;
                     } else {
-                        panic!("+ expected an integer");
+                        panic!("+ expected an integer but got {:?}", to_string::to_string(&arg_value));
                     }
                 }
                 Exp::Int(result)
