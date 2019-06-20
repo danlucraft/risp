@@ -15,6 +15,9 @@ pub struct Function {
 
 impl Callable for Function {
     fn call(&self, args: Vec<Exp>, mut env: &mut Env) -> Exp {
+        if args.len() != self.arg_names.len() {
+            panic!("function {:?} expected {} args but received {}", self.self_name, self.arg_names.len(), args.len());
+        }
         let mut arg_values: Vec<Exp> = vec!();
         for arg in args {
             arg_values.push(eval(&arg, &mut env))
