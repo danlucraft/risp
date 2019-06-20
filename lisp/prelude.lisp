@@ -67,9 +67,11 @@
 (assert_eq! '() (zip '() '(4)))
 
 (defun lookup (x y)
-  (cond (eq x (car (car y))) (car (cdr (car y)))
+  (cond (eq y '())           nil
+        (eq x (car (car y))) (car (cdr (car y)))
         true                 (lookup x (cdr y))))
 
 (assert_eq! 'a (lookup 1 '((1 a))))
 (assert_eq! 'b (lookup 101 '((101 b) (1 a))))
 (assert_eq! 'a (lookup 1 '((101 b) (1 a))))
+(assert_eq! nil (lookup 2 '((101 b) (1 a))))
