@@ -76,3 +76,74 @@
 (assert_eq! 'b (lookup 101 '((101 b) (1 a))))
 (assert_eq! 'a (lookup 1 '((101 b) (1 a))))
 (assert_eq! nil (lookup 2 '((101 b) (1 a))))
+
+(defun eval (e a)
+  (cond
+    (atom e)  (lookup e a)
+    (int? e)  e
+    (bool? e) e
+    (nil? e)  e
+    (atom (car e))
+      (cond
+        (eq (car e) 'quote) (car (cdr e))
+        (eq (car e) 'atom)  (atom  (eval (car (cdr e)) a))
+        (eq (car e) 'eq)    (eq    (eval (car (cdr e)) a)
+                                   (eval (nth 2 e) a))
+        (eq (car e) 'car)   (car   (eval (car (cdr e)) a))
+        (eq (car e) 'cdr)   (cdr   (eval (car (cdr e)) a))
+        (eq (car e) 'cons)  (cons  (eval (car (cdr e)) a)
+                                   (eval (nth 2 e) a))
+        (eq (car e) 'cond)  (evcon (cdr e) a)
+        (eq (car e) '+)     (+ (eval (nth 1 e) a) 
+                               (eval (nth 2 e) a))
+        true (eval (cons (lookup (car e) a)
+                         (cdr e))
+                   a))
+    (eq (car (car e)) 'label)
+      (eval (cons (nth 2 (car e)) (cdr e))
+            (cons (list (nth 1 (car e)) (car e)) a))
+    (eq (car (car e)) 'lambda)
+      (eval (nth 2 (car e)) 
+            (append (zip (nth 1 (car e)) (evlis (cdr e) a))
+                    a))))
+
+(defun evcon (c a)
+  (cond (eval (car c) a) (eval (nth 1 c) a)
+        true             (evcon (cdr (cdr c)) a)))
+
+(defun evlis (m a)
+  (cond (null? m) '()
+        true      (cons (eval (car m) a)
+                        (evlis (cdr m) a))))
+
+(assert_eq! 3 (eval '(+ 1 2) '()))
+(assert_eq! '(1 1 2) (eval '(cons 1 '(1 2)) '()))
+(assert_eq! '(1 10 2) (eval '(cons 1 (cons a '(2))) '((a 10))))
+(assert_eq! 1 (eval '(car '(1 2)) '()))
+(assert_eq! '(2) (eval '(cdr '(1 2)) '()))
+(assert_eq! false (eval '(eq 1 2) '()))
+
+(assert_eq! 'a (eval 'x '((x a) (y b))))
+(assert_eq! '(a b c) (eval '(cons x '(b c)) '((x a) (y b))))
+
+(assert_eq! 'list (eval '(cond (atom x) 'atom true 'list) '((x '(a b)))))
+
+(assert_eq! '(a b c) (eval '(f '(b c)) '((f (lambda (x) (cons 'a x))))))
+
+(assert_eq! 
+  'a 
+  (eval '(
+    (label firstatom 
+           (lambda (x)
+             (cond (atom x) x
+                   true     (firstatom (car x)))))
+    y)
+   '((y ((a b) (c d))))))
+
+(assert_eq!
+  '(a c d)
+  (eval
+    '((lambda (x y) (cons x (cdr y)))
+      'a
+      '(b c d))
+    '()))
