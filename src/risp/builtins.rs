@@ -140,29 +140,11 @@ impl Callable for BuiltIn {
                     panic!("cdr expected a list");
                 }
 
-            }
+            },
             BuiltIn::Eq => {
                 let l = eval(&args[0], env);
                 let r = eval(&args[1], env);
-
-                if let Exp::Atom(x) = l {
-                    if let Exp::Atom(y) = r {
-                        return Exp::Bool(x == y);
-                    }
-                } else if let Exp::Int(x) = l {
-                    if let Exp::Int(y) = r {
-                        return Exp::Bool(x == y);
-                    } 
-                } else if let Exp::List(x) = l {
-                    if let Exp::List(y) = r {
-                        return Exp::Bool(x.len() == 0 && y.len() == 0);
-                    }
-                } else if let Exp::Bool(xb) = l {
-                    if let Exp::Bool(yb) = r {
-                        return Exp::Bool(xb == yb);
-                    }
-                }
-                Exp::Bool(false)
+                Exp::Bool(l == r)
             }
         }
     }
@@ -258,6 +240,14 @@ mod tests {
         assert_eq!(Exp::Bool(false), eval(&parse("(eq true false)"), &mut Env::new()));
         assert_eq!(Exp::Bool(true), eval(&parse("(eq 12 12)"), &mut Env::new()));
         assert_eq!(Exp::Bool(false), eval(&parse("(eq 12 -12)"), &mut Env::new()));
+    }
+
+    #[test]
+    fn eval_eq_works_with_nested_lists() {
+        assert_eq!(Exp::Bool(true), eval(&parse("(eq '(a b c) '(a b c))"), &mut Env::new()));
+        assert_eq!(Exp::Bool(false), eval(&parse("(eq '(a b c) '(a b d))"), &mut Env::new()));
+        assert_eq!(Exp::Bool(true), eval(&parse("(eq '(a '(1 2 3) c) '(a '(1 2 3) c))"), &mut Env::new()));
+        assert_eq!(Exp::Bool(false), eval(&parse("(eq '(a '(1 2 3) c) '(a '(1 2 4) c))"), &mut Env::new()));
     }
 
     #[test]
