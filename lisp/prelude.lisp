@@ -1,5 +1,6 @@
 (defun assert_eq! (x y)
-  (assert! (eq x y)))
+  (cond (eq x y) true
+        true     (do (prn x y) (assert! false))))
 
 (defun nth (n list)
   (cond (eq n 0) (car list)

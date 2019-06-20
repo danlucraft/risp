@@ -107,10 +107,12 @@ impl Callable for BuiltIn {
                 }
             },
             BuiltIn::Inspect => {
+                let mut result = Exp::Nil;
                 for arg in args {
-                    println!("{}", to_string::to_string(&eval(&arg, env)));
+                    result = eval(&arg, env);
+                    println!("{}", to_string::to_string(&result));
                 }
-                Exp::Bool(true)
+                result
             },
             BuiltIn::Label => {
                 if let Exp::Atom(name) = &args[0] {
