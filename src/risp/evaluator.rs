@@ -50,7 +50,7 @@ pub fn eval<'a>(exp: &Exp, env: &mut Env) -> Result<Exp, Exception> {
                 }
             }
         },
-        Exp::BuiltIn(_) => panic!("Don't know how to evaluate a built in"),
+        Exp::BuiltIn(_) => Ok(exp.clone()),
         Exp::List(v) => {
             let first = eval(&v[0], env);
             match first {
