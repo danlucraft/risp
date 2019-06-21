@@ -275,7 +275,7 @@ mod tests {
 
     #[test]
     fn eval_lambda() {
-        assert_eq!( "(1 10)", run("( (lambda () (cons 1 '(10))) 2)") );
+        assert_eq!( "(1 10)", run("( (lambda () (cons 1 '(10))))") );
     }
 
     #[test]
