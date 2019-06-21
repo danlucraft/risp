@@ -17,11 +17,6 @@ pub fn eval_all(exps: &Vec<Exp>, env: &mut Env) -> Result<Exp, Exception> {
 
 pub fn eval<'a>(exp: &Exp, env: &mut Env) -> Result<Exp, Exception> {
     match exp {
-        Exp::Int(_)       => Ok(exp.clone()),
-        Exp::Bool(_)      => Ok(exp.clone()),
-        Exp::Nil          => Ok(exp.clone()),
-        Exp::Function(_)  => Ok(exp.clone()),
-        Exp::Exception(_) => Ok(exp.clone()),
         Exp::Atom(a) => match a.as_ref() {
             "quote"   => Ok(Exp::BuiltIn(BuiltIn::Quote)),
             "atom"    => Ok(Exp::BuiltIn(BuiltIn::Atom)),
@@ -50,7 +45,6 @@ pub fn eval<'a>(exp: &Exp, env: &mut Env) -> Result<Exp, Exception> {
                 }
             }
         },
-        Exp::BuiltIn(_) => Ok(exp.clone()),
         Exp::List(v) => {
             let first = eval(&v[0], env);
             match first {
@@ -68,7 +62,8 @@ pub fn eval<'a>(exp: &Exp, env: &mut Env) -> Result<Exp, Exception> {
                     first
                 }
             }
-        }
+        },
+        _ => Ok(exp.clone())
     }
 }
 
