@@ -36,13 +36,13 @@ mod tests {
     use super::*;
     use crate::risp::parser;
     use crate::risp::evaluator::eval;
-    use crate::risp::to_string::to_string;
+    use crate::risp::to_string::display_result;
 
     #[test]
     fn test_label() {
         assert_eq!(
             "(a m (a m c) d)",
-            to_string(&eval(&parser::parse(r#"
+            display_result(&eval(&parser::parse(r#"
             (
                 (label subst (lambda (x y z)
                                (cond (eq z '()) '()
@@ -75,7 +75,7 @@ mod tests {
     fn test_def() {
         let mut env = Env::new();
         let exp = &parser::parse("(def num 101)")[0];
-        eval(exp, &mut env);
+        eval(exp, &mut env).ok();
         assert_eq!(Some(Exp::Int(101)), env.get("num".to_string()));
     }
 
@@ -83,8 +83,8 @@ mod tests {
     fn test_resolving() {
         let mut env = Env::new();
         let exp = &parser::parse("(def num 101)")[0];
-        eval(exp, &mut env);
+        eval(exp, &mut env).ok();
         let exp2 = &parser::parse("num")[0];
-        assert_eq!(Exp::Int(101), eval(exp2, &mut env));
+        assert_eq!(Ok(Exp::Int(101)), eval(exp2, &mut env));
     }
 }

@@ -1,5 +1,6 @@
 use crate::risp::expressions::Exp;
 use crate::risp::evaluator::eval;
+use crate::risp::exceptions::Exception;
 use crate::risp::environment::Env;
 use crate::risp::to_string;
 use crate::risp::function::{Callable, Function};
@@ -28,41 +29,46 @@ pub enum BuiltIn {
 }
 
 impl Callable for BuiltIn {
-    fn call(&self, args: Vec<Exp>, env: &mut Env) -> Exp {
+    fn call(&self, args: Vec<Exp>, env: &mut Env) -> Result<Exp, Exception> {
         match self {
             BuiltIn::IsInt => {
-                if let Exp::Int(_) = eval(&args[0], env) {
-                    Exp::Bool(true)
+                let arg0 = eval(&args[0], env)?;
+                if let Exp::Int(_) = arg0 {
+                    Ok(Exp::Bool(true))
                 } else {
-                    Exp::Bool(false)
+                    Ok(Exp::Bool(false))
                 }
             },
             BuiltIn::IsBool => {
-                if let Exp::Bool(_) = eval(&args[0], env) {
-                    Exp::Bool(true)
+                let arg0 = eval(&args[0], env)?;
+                if let Exp::Bool(_) = arg0 {
+                    Ok(Exp::Bool(true))
                 } else {
-                    Exp::Bool(false)
+                    Ok(Exp::Bool(false))
                 }
             },
             BuiltIn::IsNil => {
-                if eval(&args[0], env) == Exp::Nil {
-                    Exp::Bool(true)
+                let arg0 = eval(&args[0], env)?;
+                if arg0 == Exp::Nil {
+                    Ok(Exp::Bool(true))
                 } else {
-                    Exp::Bool(false)
+                    Ok(Exp::Bool(false))
                 }
             },
             BuiltIn::Do => {
                 let mut result = Exp::Bool(true);
                 for arg in args {
-                    result = eval(&arg, env);
+                    let arg_value = eval(&arg, env)?;
+                    result = arg_value;
                 }
-                result
+                Ok(result)
             }
             BuiltIn::Assert => {
-                if let Exp::Bool(true) = eval(&args[0], env) {
-                    return Exp::Bool(true);
+                let arg0 = eval(&args[0], env)?;
+                if let Exp::Bool(true) = arg0 {
+                    Ok(Exp::Bool(true))
                 } else {
-                    panic!("Assertion failed");
+                    Err(Exception::AssertionFailed("Assertion failed".to_owned()))
                 }
             },
             BuiltIn::Defun => {
@@ -74,35 +80,37 @@ impl Callable for BuiltIn {
                             self_name: Some(name.to_string())
                         });
                         env.set(name.to_string(), function.clone());
-                        function
+                        Ok(function)
                     } else {
-                        panic!("Second arg to defun should be a list of atoms");
+                        Err(Exception::ArgumentError("Second arg to defun should be a list of atoms".to_owned()))
                     }
                 } else {
-                    panic!("First arg to defun should be an atom");
+                    Err(Exception::ArgumentError("First arg to defun should be an atom".to_owned()))
                 }
             }
             BuiltIn::Add => {
                 let mut result: i32 = 0;
                 for arg in args {
-                    let arg_value = eval(&arg, env);
+                    let arg_value = eval(&arg, env)?;
                     if let Exp::Int(i) = arg_value {
                         result += i;
                     } else {
                         panic!("+ expected an integer but got {:?}", to_string::to_string(&arg_value));
                     }
                 }
-                Exp::Int(result)
+                Ok(Exp::Int(result))
             },
             BuiltIn::Subtract => {
-                if let Exp::Int(i) = eval(&args[0], env) {
+                let arg0 =  eval(&args[0], env)?;
+                if let Exp::Int(i) = arg0 {
                     let mut result: i32 = i;
                     for arg in &args[1..] {
-                        if let Exp::Int(i) = eval(&arg, env) {
+                        let arg_v = eval(&arg, env)?;
+                        if let Exp::Int(i) = arg_v {
                             result -= i;
                         }
                     }
-                    Exp::Int(result)
+                    Ok(Exp::Int(result))
                 } else {
                     panic!("- expected an integer");
                 }
@@ -110,16 +118,17 @@ impl Callable for BuiltIn {
             BuiltIn::Inspect => {
                 let mut result = Exp::Nil;
                 for arg in args {
-                    result = eval(&arg, env);
+                    result = eval(&arg, env)?;
                     println!("{}", to_string::to_string(&result));
                 }
-                result
+                Ok(result)
             },
             BuiltIn::Label => {
                 if let Exp::Atom(name) = &args[0] {
-                    if let Exp::Function(mut function) = eval(&args[1], env) {
+                    let arg1 = eval(&args[1], env)?;
+                    if let Exp::Function(mut function) = arg1 {
                         function.self_name = Some(name.to_owned());
-                        Exp::Function(function)
+                        Ok(Exp::Function(function))
                     } else {
                         panic!("Second arg to label must yield a function");
                     }
@@ -129,63 +138,68 @@ impl Callable for BuiltIn {
             }
             BuiltIn::Def => {
                 if let Exp::Atom(name) = &args[0] {
-                    let value = eval(&args[1], env);
+                    let value = eval(&args[1], env)?;
                     env.set(name.clone(), value);
-                    Exp::Bool(true)
+                    Ok(Exp::Bool(true))
                 } else {
                     panic!("First arg to def should be an atom");
                 }
             },
             BuiltIn::Lambda => {
                 if let Exp::List(arg_list) = &args[0] {
-                    Exp::Function(Function { arg_names: arg_list.to_vec(), body_exps: args[1..].to_vec(), self_name: None })
+                    Ok(Exp::Function(Function { arg_names: arg_list.to_vec(), body_exps: args[1..].to_vec(), self_name: None }))
                 } else {
                     panic!("First arg to lambda should be arg list");
                 }
             }
-            BuiltIn::Quote => return args[0].clone(),
+            BuiltIn::Quote => return Ok(args[0].clone()),
             BuiltIn::Atom => {
-                if let Exp::Atom(_) = eval(&args[0], env) {
-                    Exp::Bool(true)
+                let arg0 = eval(&args[0], env)?;
+                if let Exp::Atom(_) = arg0 {
+                    Ok(Exp::Bool(true))
                 } else {
-                    Exp::Bool(false)
+                    Ok(Exp::Bool(false))
                 }
             },
             BuiltIn::Cond => {
                 for curr in 0..(args.len()/2) {
-                    if eval(&args[curr*2], env) == Exp::Bool(true) {
+                    let arg_v = eval(&args[curr*2], env)?;
+                    if arg_v == Exp::Bool(true) {
                         return eval(&args[curr*2 + 1], env);
                     }
                 }
-                Exp::List(vec!())
+                Ok(Exp::List(vec!()))
             },
             BuiltIn::Cons => {
-                let new_head = eval(&args[0], env);
-                if let Exp::List(lv) = eval(&args[1], env) {
+                let new_head = eval(&args[0], env)?;
+                let list = eval(&args[1], env)?;
+                if let Exp::List(lv) = list {
                     let mut new_vec = lv.clone();
                     new_vec.insert(0, new_head.clone());
-                    Exp::List(new_vec)
+                    Ok(Exp::List(new_vec))
                 } else {
                     panic!("cons expected a list");
                 }
             },
             BuiltIn::Car => {
-                if let Exp::List(v) = eval(&args[0], env) {
+                let arg0 = eval(&args[0], env)?;
+                if let Exp::List(v) = arg0 {
                     if v.len() > 0 {
-                        v[0].clone()
+                        Ok(v[0].clone())
                     } else {
-                        Exp::List(vec!())
+                        Ok(Exp::List(vec!()))
                     }
                 } else {
                     panic!("car expected a list")
                 }
             },
             BuiltIn::Cdr => {
-                if let Exp::List(vec) = eval(&args[0], env) {
+                let arg0 = eval(&args[0], env)?;
+                if let Exp::List(vec) = arg0 {
                     if vec.len() > 1 {
-                        Exp::List(vec[1..].to_vec())
+                        Ok(Exp::List(vec[1..].to_vec()))
                     } else {
-                        Exp::List(vec!())
+                        Ok(Exp::List(vec!()))
                     }
                 } else {
                     panic!("cdr expected a list");
@@ -194,16 +208,16 @@ impl Callable for BuiltIn {
             },
             BuiltIn::Eq => {
                 if args.len() < 2 {
-                    Exp::Bool(true)
+                    Ok(Exp::Bool(true))
                 } else {
-                    let first = eval(&args[0], env);
+                    let first = eval(&args[0], env)?;
                     for arg in &args[1..] {
-                        let r = eval(&arg, env);
+                        let r = eval(&arg, env)?;
                         if first != r {
-                            return Exp::Bool(false);
+                            return Ok(Exp::Bool(false));
                         }
                     }
-                    Exp::Bool(true)
+                    Ok(Exp::Bool(true))
                 }
             }
         }
@@ -214,7 +228,7 @@ impl Callable for BuiltIn {
 mod tests {
     use super::*;
     use crate::risp::parser;
-    use crate::risp::to_string::to_string;
+    use crate::risp::to_string::display_result;
     use crate::risp::evaluator::eval_all;
 
     fn parse(code: &str) -> Exp {
@@ -222,14 +236,14 @@ mod tests {
     }
 
     fn run(code: &str) -> String {
-        to_string(&eval(&parse(code), &mut Env::new()))
+        display_result(&eval(&parse(code), &mut Env::new()))
     }
 
     fn run_all(code: &str) -> String {
         let exps = parser::parse(code);
         let mut env = Env::new();
         let exp = eval_all(&exps, &mut env);
-        to_string(&exp)
+        display_result(&exp)
     }
 
     #[test]
@@ -324,46 +338,46 @@ mod tests {
 
     #[test]
     fn eval_eq() {
-        assert_eq!(Exp::Bool(true),  eval(&parse("(eq 'abc 'abc)"), &mut Env::new()));
-        assert_eq!(Exp::Bool(false), eval(&parse("(eq 'abc 'def)"), &mut Env::new()));
-        assert_eq!(Exp::Bool(false), eval(&parse("(eq '(a b c) 'def)"), &mut Env::new()));
-        assert_eq!(Exp::Bool(true),  eval(&parse("(eq '() '())"), &mut Env::new()));
-        assert_eq!(Exp::Bool(true),  eval(&parse("(eq true true)"), &mut Env::new()));
-        assert_eq!(Exp::Bool(true),  eval(&parse("(eq false false)"), &mut Env::new()));
-        assert_eq!(Exp::Bool(false), eval(&parse("(eq true false)"), &mut Env::new()));
-        assert_eq!(Exp::Bool(true),  eval(&parse("(eq 12 12)"), &mut Env::new()));
-        assert_eq!(Exp::Bool(false), eval(&parse("(eq 12 -12)"), &mut Env::new()));
-        assert_eq!(Exp::Bool(true),  eval(&parse("(eq 12)"), &mut Env::new()));
-        assert_eq!(Exp::Bool(true),  eval(&parse("(eq)"), &mut Env::new()));
-        assert_eq!(Exp::Bool(true),  eval(&parse("(eq 12 12 12)"), &mut Env::new()));
-        assert_eq!(Exp::Bool(false), eval(&parse("(eq 12 12 1)"), &mut Env::new()));
+        assert_eq!(Ok(Exp::Bool(true)),  eval(&parse("(eq 'abc 'abc)"), &mut Env::new()));
+        assert_eq!(Ok(Exp::Bool(false)), eval(&parse("(eq 'abc 'def)"), &mut Env::new()));
+        assert_eq!(Ok(Exp::Bool(false)), eval(&parse("(eq '(a b c) 'def)"), &mut Env::new()));
+        assert_eq!(Ok(Exp::Bool(true)),  eval(&parse("(eq '() '())"), &mut Env::new()));
+        assert_eq!(Ok(Exp::Bool(true)),  eval(&parse("(eq true true)"), &mut Env::new()));
+        assert_eq!(Ok(Exp::Bool(true)),  eval(&parse("(eq false false)"), &mut Env::new()));
+        assert_eq!(Ok(Exp::Bool(false)), eval(&parse("(eq true false)"), &mut Env::new()));
+        assert_eq!(Ok(Exp::Bool(true)),  eval(&parse("(eq 12 12)"), &mut Env::new()));
+        assert_eq!(Ok(Exp::Bool(false)), eval(&parse("(eq 12 -12)"), &mut Env::new()));
+        assert_eq!(Ok(Exp::Bool(true)),  eval(&parse("(eq 12)"), &mut Env::new()));
+        assert_eq!(Ok(Exp::Bool(true)),  eval(&parse("(eq)"), &mut Env::new()));
+        assert_eq!(Ok(Exp::Bool(true)),  eval(&parse("(eq 12 12 12)"), &mut Env::new()));
+        assert_eq!(Ok(Exp::Bool(false)), eval(&parse("(eq 12 12 1)"), &mut Env::new()));
     }
 
     #[test]
     fn eval_eq_works_with_nested_lists() {
-        assert_eq!(Exp::Bool(true), eval(&parse("(eq '(a b c) '(a b c))"), &mut Env::new()));
-        assert_eq!(Exp::Bool(false), eval(&parse("(eq '(a b c) '(a b d))"), &mut Env::new()));
-        assert_eq!(Exp::Bool(true), eval(&parse("(eq '(a '(1 2 3) c) '(a '(1 2 3) c))"), &mut Env::new()));
-        assert_eq!(Exp::Bool(false), eval(&parse("(eq '(a '(1 2 3) c) '(a '(1 2 4) c))"), &mut Env::new()));
+        assert_eq!(Ok(Exp::Bool(true)), eval(&parse("(eq '(a b c) '(a b c))"), &mut Env::new()));
+        assert_eq!(Ok(Exp::Bool(false)), eval(&parse("(eq '(a b c) '(a b d))"), &mut Env::new()));
+        assert_eq!(Ok(Exp::Bool(true)), eval(&parse("(eq '(a '(1 2 3) c) '(a '(1 2 3) c))"), &mut Env::new()));
+        assert_eq!(Ok(Exp::Bool(false)), eval(&parse("(eq '(a '(1 2 3) c) '(a '(1 2 4) c))"), &mut Env::new()));
     }
 
     #[test]
     fn eval_atom() {
-        assert_eq!(Exp::Bool(true), eval(&parse("(atom 'abc))"), &mut Env::new()));
-        assert_eq!(Exp::Bool(false), eval(&parse("(atom '(a b c))"), &mut Env::new()));
-        assert_eq!(Exp::Bool(false), eval(&parse("(atom '()))"), &mut Env::new()));
+        assert_eq!(Ok(Exp::Bool(true)), eval(&parse("(atom 'abc))"), &mut Env::new()));
+        assert_eq!(Ok(Exp::Bool(false)), eval(&parse("(atom '(a b c))"), &mut Env::new()));
+        assert_eq!(Ok(Exp::Bool(false)), eval(&parse("(atom '()))"), &mut Env::new()));
     }
 
     #[test]
     fn eval_quote() {
-        assert_eq!(Exp::Int(101), eval(&parse("'101"), &mut Env::new()));
-        assert_eq!(Exp::Atom("foo".to_owned()), eval(&parse("'foo"), &mut Env::new()));
+        assert_eq!(Ok(Exp::Int(101)), eval(&parse("'101"), &mut Env::new()));
+        assert_eq!(Ok(Exp::Atom("foo".to_owned())), eval(&parse("'foo"), &mut Env::new()));
         assert_eq!(
-            Exp::List(vec!(
+            Ok(Exp::List(vec!(
                 Exp::Atom("a".to_owned()),
                 Exp::Atom("b".to_owned()),
                 Exp::Atom("c".to_owned())
-            )),
+            ))),
             eval(&parse("'(a b c)"), &mut Env::new())
         );
     }

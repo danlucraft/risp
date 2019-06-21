@@ -15,12 +15,12 @@ fn read_line() -> String {
 
 fn main() {
     let mut env = Env::new();
-    loader::eval_file("lisp/prelude.lisp".to_owned(), &mut env);
+    loader::eval_file("lisp/prelude.lisp".to_owned(), &mut env).expect("Couldn't load file");
     
     loop {
         let line = read_line();
         let exp = parser::parse_expression(&mut line.chars().peekable()).unwrap();
         let result = evaluator::eval(&exp, &mut env);
-        println!("{}", to_string::to_string(&result));
+        println!("{}", to_string::display_result(&result));
     }
 }

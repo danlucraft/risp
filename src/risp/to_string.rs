@@ -1,4 +1,5 @@
 use crate::risp::expressions::Exp;
+use crate::risp::exceptions::Exception;
 
 pub fn to_string(value: &Exp) -> String {
     match value {
@@ -9,6 +10,7 @@ pub fn to_string(value: &Exp) -> String {
         Exp::Atom(a) => a.clone(),
         Exp::BuiltIn(_) => "#BuiltIn".to_owned(),
         Exp::Function(_) => "#Function".to_owned(),
+        Exp::Exception(_) => "#Exception".to_owned(),
         Exp::List(v) => {
             let mut result = String::new();
             result.push_str("(");
@@ -21,6 +23,13 @@ pub fn to_string(value: &Exp) -> String {
             result.push_str(")");
             result
         }
+    }
+}
+
+pub fn display_result(result: &Result<Exp, Exception>) -> String {
+    match result {
+        Ok(exp) => to_string(exp),
+        Err(_) => "Exception!".to_owned()
     }
 }
 
