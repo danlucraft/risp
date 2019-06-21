@@ -68,7 +68,7 @@ impl Callable for BuiltIn {
                 if let Exp::Bool(true) = arg0 {
                     Ok(Exp::Bool(true))
                 } else {
-                    Err(Exception::AssertionFailed("Assertion failed".to_owned()))
+                    Err(Exception::AssertionFailed("Assertion failed".to_owned(), vec!()))
                 }
             },
             BuiltIn::Defun => {
@@ -82,10 +82,10 @@ impl Callable for BuiltIn {
                         env.set(name.to_string(), function.clone());
                         Ok(function)
                     } else {
-                        Err(Exception::ArgumentError("Second arg to defun should be a list of atoms".to_owned()))
+                        Err(Exception::ArgumentError("Second arg to defun should be a list of atoms".to_owned(), vec!()))
                     }
                 } else {
-                    Err(Exception::ArgumentError("First arg to defun should be an atom".to_owned()))
+                    Err(Exception::ArgumentError("First arg to defun should be an atom".to_owned(), vec!()))
                 }
             }
             BuiltIn::Add => {

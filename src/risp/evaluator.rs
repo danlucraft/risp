@@ -41,7 +41,7 @@ pub fn eval<'a>(exp: &Exp, env: &mut Env) -> Result<Exp, Exception> {
                 if let Some(value) = env.get(a.to_string()) {
                     Ok(value)
                 } else {
-                    Err(Exception::UnknownSymbol(a.to_string()))
+                    Err(Exception::UnknownSymbol(a.to_string(), vec!()))
                 }
             }
         },
@@ -52,11 +52,11 @@ pub fn eval<'a>(exp: &Exp, env: &mut Env) -> Result<Exp, Exception> {
                     match first_exp {
                         Exp::BuiltIn(builtin) => builtin.call(v[1..].to_vec(), env),
                         Exp::Function(function) => function.call(v[1..].to_vec(), env),
-                        Exp::Atom(a) => Err(Exception::UncallableCalled(a.to_string())),
-                        Exp::Int(a)  => Err(Exception::UncallableCalled(a.to_string())),
-                        Exp::Bool(a) => Err(Exception::UncallableCalled(a.to_string())),
-                        Exp::Nil     => Err(Exception::UncallableCalled("nil".to_owned())),
-                        _            => Err(Exception::UncallableCalled("unknown".to_owned()))
+                        Exp::Atom(a) => Err(Exception::UncallableCalled(a.to_string(), vec!())),
+                        Exp::Int(a)  => Err(Exception::UncallableCalled(a.to_string(), vec!())),
+                        Exp::Bool(a) => Err(Exception::UncallableCalled(a.to_string(), vec!())),
+                        Exp::Nil     => Err(Exception::UncallableCalled("nil".to_owned(), vec!())),
+                        _            => Err(Exception::UncallableCalled("unknown".to_owned(), vec!()))
                     },
                 Err(_) => {
                     first
