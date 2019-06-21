@@ -85,4 +85,21 @@ mod tests {
         assert_eq!( "123", run_all("(def foo 123) foo") );
         assert_eq!( "(123 999)", run_all("(def foo 123) (def bar 999) (cons foo (cons bar '()))") );
     }
+
+    #[test]
+    fn exception_uncallable_things() {
+        assert_eq!( "Exception: UncallableCalled(\"1\")", run_all("(1 2 3)"));
+        assert_eq!( "Exception: UncallableCalled(\"nil\")", run_all("(nil 2 3)"));
+        assert_eq!( "Exception: UncallableCalled(\"true\")", run_all("(true 2 3)"));
+    }
+
+    #[test]
+    fn exception_unknown_symbol() {
+        assert_eq!( "Exception: UnknownSymbol(\"a\")", run_all("(a 2 3)"));
+    }
+
+    #[test]
+    fn exception_deep() {
+        assert_eq!( "Exception: UncallableCalled(\"10\")", run_all("(cons 10 (10 2 3))"));
+    }
 }
