@@ -29,7 +29,7 @@ pub fn to_string(value: &Exp) -> String {
 pub fn display_result(result: &Result<Exp, Exception>) -> String {
     match result {
         Ok(exp) => to_string(exp),
-        Err(_) => "Exception!".to_owned()
+        Err(exc) => format!("Exception: {:?}", exc)
     }
 }
 
