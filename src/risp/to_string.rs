@@ -26,10 +26,19 @@ pub fn to_string(value: &Exp) -> String {
     }
 }
 
+
 pub fn display_result(result: &Result<Exp, Exception>) -> String {
     match result {
         Ok(exp) => to_string(exp),
-        Err(exc) => format!("Exception: {:?}", exc)
+        Err(exc) => {
+            let mut result = format!("Exception! -- {:?}: {}\n", exc.etype, exc.message);
+            for e in &exc.backtrace {
+                let mut line = to_string(&e);
+                line.truncate(30);
+                result.push_str(&format!("  {}\n", line));
+            }
+            result
+        }
     }
 }
 

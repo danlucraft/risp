@@ -41,7 +41,7 @@ pub fn eval<'a>(exp: &Exp, env: &mut Env) -> Result<Exp, Exception> {
                 if let Some(value) = env.get(a.to_string()) {
                     Ok(value)
                 } else {
-                    Err(Exception { etype: ExceptionType::UnknownSymbol, message: a.to_string(), backtrace: vec!() })
+                    Err(Exception { etype: ExceptionType::UnknownSymbol, message: a.to_string(), backtrace: vec!(exp.clone()) })
                 }
             }
         },
@@ -50,16 +50,28 @@ pub fn eval<'a>(exp: &Exp, env: &mut Env) -> Result<Exp, Exception> {
             match first {
                 Ok(first_exp) =>
                     match first_exp {
-                        Exp::BuiltIn(builtin) => builtin.call(v[1..].to_vec(), env),
+                        Exp::BuiltIn(builtin) => {
+                            let result = builtin.call(v[1..].to_vec(), env);
+                            match result {
+                                Ok(r) => Ok(r),
+                                Err(ex) => {
+                                    let mut new_ex = ex.clone();
+                                    new_ex.backtrace.push(exp.clone());
+                                    Err(new_ex)
+                                }
+                            }
+                        },
                         Exp::Function(function) => function.call(v[1..].to_vec(), env),
-                        Exp::Atom(a) => Err(Exception { etype: ExceptionType::UncallableCalled, message: a.to_string(), backtrace: vec!() }),
-                        Exp::Int(a)  => Err(Exception { etype: ExceptionType::UncallableCalled, message: a.to_string(), backtrace: vec!() }),
-                        Exp::Bool(a) => Err(Exception { etype: ExceptionType::UncallableCalled, message: a.to_string(), backtrace: vec!() }),
-                        Exp::Nil     => Err(Exception { etype: ExceptionType::UncallableCalled, message: "nil".to_owned(), backtrace: vec!() }),
-                        _            => Err(Exception { etype: ExceptionType::UncallableCalled, message: "unknown".to_owned(), backtrace: vec!() })
+                        Exp::Atom(a) => Err(Exception { etype: ExceptionType::UncallableCalled, message: a.to_string(), backtrace: vec!(exp.clone()) }),
+                        Exp::Int(a)  => Err(Exception { etype: ExceptionType::UncallableCalled, message: a.to_string(), backtrace: vec!(exp.clone()) }),
+                        Exp::Bool(a) => Err(Exception { etype: ExceptionType::UncallableCalled, message: a.to_string(), backtrace: vec!(exp.clone()) }),
+                        Exp::Nil     => Err(Exception { etype: ExceptionType::UncallableCalled, message: "nil".to_owned(), backtrace: vec!(exp.clone()) }),
+                        _            => Err(Exception { etype: ExceptionType::UncallableCalled, message: "unknown".to_owned(), backtrace: vec!(exp.clone()) })
                     },
-                Err(_) => {
-                    first
+                Err(exc) => {
+                    let mut new_ex = exc.clone();
+                    new_ex.backtrace.push(exp.clone());
+                    Err(new_ex)
                 }
             }
         },
@@ -80,6 +92,10 @@ mod tests {
         display_result(&exp)
     }
 
+    fn result_of(code: &str) -> Result<Exp, Exception> {
+        eval_all(&parser::parse(code), &mut Env::new())
+    }
+
     #[test]
     fn eval_many() {
         assert_eq!( "123", run_all("(def foo 123) foo") );
@@ -88,18 +104,22 @@ mod tests {
 
     #[test]
     fn exception_uncallable_things() {
-        assert_eq!( "Exception: Exception { etype: UncallableCalled, message: \"1\", backtrace: [] }", run_all("(1 2 3)"));
-        assert_eq!( "Exception: Exception { etype: UncallableCalled, message: \"nil\", backtrace: [] }", run_all("(nil 2 3)"));
-        assert_eq!( "Exception: Exception { etype: UncallableCalled, message: \"true\", backtrace: [] }", run_all("(true 2 3)"));
+        let exc = result_of("(1 2 3)").unwrap_err();
+        assert_eq!("1", exc.message);
+        assert_eq!(ExceptionType::UncallableCalled, exc.etype);
     }
 
     #[test]
     fn exception_unknown_symbol() {
-        assert_eq!( "Exception: Exception { etype: UnknownSymbol, message: \"a\", backtrace: [] }", run_all("(a 2 3)"));
+        let exc = result_of("(a 2 3)").unwrap_err();
+        assert_eq!("a", exc.message);
+        assert_eq!(ExceptionType::UnknownSymbol, exc.etype);
     }
 
     #[test]
     fn exception_deep() {
-        assert_eq!( "Exception: Exception { etype: UncallableCalled, message: \"10\", backtrace: [] }", run_all("(cons 10 (10 2 3))"));
+        let exc = result_of("(cons 10 (10 2 3))").unwrap_err();
+        assert_eq!("10", exc.message);
+        assert_eq!(ExceptionType::UncallableCalled, exc.etype);
     }
 }
