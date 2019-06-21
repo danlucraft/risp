@@ -32,19 +32,35 @@ impl Callable for BuiltIn {
     fn call(&self, args: Vec<Exp>, env: &mut Env) -> Result<Exp, Exception> {
         match self {
             BuiltIn::IsInt => {
-                let arg0 = eval(&args[0], env)?;
-                if let Exp::Int(_) = arg0 {
-                    Ok(Exp::Bool(true))
+                if args.len() == 1 {
+                    let arg0 = eval(&args[0], env)?;
+                    if let Exp::Int(_) = arg0 {
+                        Ok(Exp::Bool(true))
+                    } else {
+                        Ok(Exp::Bool(false))
+                    }
                 } else {
-                    Ok(Exp::Bool(false))
+                    Err(Exception { 
+                        etype: ExceptionType::ArgumentError,
+                        message: format!("int? expected 1 argument but got {}", args.len()),
+                        backtrace: vec!()
+                    })
                 }
             },
             BuiltIn::IsBool => {
-                let arg0 = eval(&args[0], env)?;
-                if let Exp::Bool(_) = arg0 {
-                    Ok(Exp::Bool(true))
+                if args.len() == 1 {
+                    let arg0 = eval(&args[0], env)?;
+                    if let Exp::Bool(_) = arg0 {
+                        Ok(Exp::Bool(true))
+                    } else {
+                        Ok(Exp::Bool(false))
+                    }
                 } else {
-                    Ok(Exp::Bool(false))
+                    Err(Exception { 
+                        etype: ExceptionType::ArgumentError,
+                        message: format!("bool? expected 1 argument but got {}", args.len()),
+                        backtrace: vec!()
+                    })
                 }
             },
             BuiltIn::IsNil => {
@@ -239,6 +255,10 @@ mod tests {
         display_result(&eval(&parse(code), &mut Env::new()))
     }
 
+    fn result_of(code: &str) -> Result<Exp, Exception> {
+        eval_all(&parser::parse(code), &mut Env::new())
+    }
+
     fn run_all(code: &str) -> String {
         let exps = parser::parse(code);
         let mut env = Env::new();
@@ -246,16 +266,33 @@ mod tests {
         display_result(&exp)
     }
 
+    fn assert_exception(exception: Exception, message: &str, etype: ExceptionType) {
+        assert_eq!(etype, exception.etype);
+        assert_eq!(message, exception.message);
+    }
+
     #[test]
     fn builtin_int() {
         assert_eq!( "true", run_all("(int? 123)") );
         assert_eq!( "false", run_all("(int? '())") );
+
+        assert_exception(result_of("(int?)").unwrap_err(),
+                         "int? expected 1 argument but got 0",
+                         ExceptionType::ArgumentError);
+
+        assert_exception(result_of("(int? 1 2)").unwrap_err(),
+                         "int? expected 1 argument but got 2",
+                         ExceptionType::ArgumentError);
     }
 
     #[test]
     fn builtin_bool() {
         assert_eq!( "true", run_all("(bool? true)") );
         assert_eq!( "false", run_all("(bool? 123)") );
+
+        assert_exception(result_of("(bool?)").unwrap_err(),
+                         "bool? expected 1 argument but got 0",
+                         ExceptionType::ArgumentError);
     }
 
     #[test]
