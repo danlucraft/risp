@@ -1,6 +1,6 @@
 use crate::risp::expressions::Exp;
 use crate::risp::evaluator::eval;
-use crate::risp::exceptions::Exception;
+use crate::risp::exceptions::{Exception, ExceptionType};
 use crate::risp::environment::Env;
 use crate::risp::to_string;
 use crate::risp::function::{Callable, Function};
@@ -68,7 +68,7 @@ impl Callable for BuiltIn {
                 if let Exp::Bool(true) = arg0 {
                     Ok(Exp::Bool(true))
                 } else {
-                    Err(Exception::AssertionFailed("Assertion failed".to_owned(), vec!()))
+                    Err(Exception { etype: ExceptionType::AssertionFailed, message: "Assertion failed".to_owned(), backtrace: vec!() })
                 }
             },
             BuiltIn::Defun => {
@@ -82,10 +82,10 @@ impl Callable for BuiltIn {
                         env.set(name.to_string(), function.clone());
                         Ok(function)
                     } else {
-                        Err(Exception::ArgumentError("Second arg to defun should be a list of atoms".to_owned(), vec!()))
+                        Err(Exception { etype: ExceptionType::ArgumentError, message: "Second arg to defun should be a list of atoms".to_owned(), backtrace: vec!() })
                     }
                 } else {
-                    Err(Exception::ArgumentError("First arg to defun should be an atom".to_owned(), vec!()))
+                    Err(Exception { etype: ExceptionType::ArgumentError, message: "First arg to defun should be an atom".to_owned(), backtrace: vec!() })
                 }
             }
             BuiltIn::Add => {

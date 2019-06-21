@@ -1,10 +1,17 @@
 use crate::risp::expressions::Exp;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Exception {
-    ArgumentError(String, Vec<Exp>),
-    SyntaxError(String, Vec<Exp>),
-    UncallableCalled(String, Vec<Exp>),
-    UnknownSymbol(String, Vec<Exp>),
-    AssertionFailed(String, Vec<Exp>)
+pub struct Exception {
+    pub etype: ExceptionType,
+    pub message: String,
+    pub backtrace: Vec<Exp>
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum ExceptionType {
+    ArgumentError,
+    SyntaxError,
+    UncallableCalled,
+    UnknownSymbol,
+    AssertionFailed,
 }
