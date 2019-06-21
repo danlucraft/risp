@@ -28,55 +28,58 @@ pub enum BuiltIn {
     IsNil
 }
 
+fn assert_arg_length_is(args: &Vec<Exp>, len: usize, name: &str) -> Result<Exp, Exception> {
+    if args.len() != len {
+        Err(Exception { 
+            etype: ExceptionType::ArgumentError,
+            message: format!("{} expected {} argument but got {}", name, len, args.len()),
+            backtrace: vec!()
+        })
+    } else {
+        Ok(Exp::Nil)
+    }
+}
+
+fn assert_arg_length_at_least(args: &Vec<Exp>, len: usize, name: &str) -> Result<Exp, Exception> {
+    if args.len() < len {
+        Err(Exception { 
+            etype: ExceptionType::ArgumentError,
+            message: format!("{} expected at least {} arguments but got {}", name, len, args.len()),
+            backtrace: vec!()
+        })
+    } else {
+        Ok(Exp::Nil)
+    }
+}
+
 impl Callable for BuiltIn {
     fn call(&self, args: Vec<Exp>, env: &mut Env) -> Result<Exp, Exception> {
         match self {
             BuiltIn::IsInt => {
-                if args.len() == 1 {
-                    let arg0 = eval(&args[0], env)?;
-                    if let Exp::Int(_) = arg0 {
-                        Ok(Exp::Bool(true))
-                    } else {
-                        Ok(Exp::Bool(false))
-                    }
+                assert_arg_length_is(&args, 1, "int?")?;
+                let arg0 = eval(&args[0], env)?;
+                if let Exp::Int(_) = arg0 {
+                    Ok(Exp::Bool(true))
                 } else {
-                    Err(Exception { 
-                        etype: ExceptionType::ArgumentError,
-                        message: format!("int? expected 1 argument but got {}", args.len()),
-                        backtrace: vec!()
-                    })
+                    Ok(Exp::Bool(false))
                 }
             },
             BuiltIn::IsBool => {
-                if args.len() == 1 {
-                    let arg0 = eval(&args[0], env)?;
-                    if let Exp::Bool(_) = arg0 {
-                        Ok(Exp::Bool(true))
-                    } else {
-                        Ok(Exp::Bool(false))
-                    }
+                assert_arg_length_is(&args, 1, "bool?")?;
+                let arg0 = eval(&args[0], env)?;
+                if let Exp::Bool(_) = arg0 {
+                    Ok(Exp::Bool(true))
                 } else {
-                    Err(Exception { 
-                        etype: ExceptionType::ArgumentError,
-                        message: format!("bool? expected 1 argument but got {}", args.len()),
-                        backtrace: vec!()
-                    })
+                    Ok(Exp::Bool(false))
                 }
             },
             BuiltIn::IsNil => {
-                if args.len() == 1 {
-                    let arg0 = eval(&args[0], env)?;
-                    if arg0 == Exp::Nil {
-                        Ok(Exp::Bool(true))
-                    } else {
-                        Ok(Exp::Bool(false))
-                    }
+                assert_arg_length_is(&args, 1, "nil?")?;
+                let arg0 = eval(&args[0], env)?;
+                if arg0 == Exp::Nil {
+                    Ok(Exp::Bool(true))
                 } else {
-                    Err(Exception { 
-                        etype: ExceptionType::ArgumentError,
-                        message: format!("nil? expected 1 argument but got {}", args.len()),
-                        backtrace: vec!()
-                    })
+                    Ok(Exp::Bool(false))
                 }
             },
             BuiltIn::Do => {
@@ -88,44 +91,30 @@ impl Callable for BuiltIn {
                 Ok(result)
             }
             BuiltIn::Assert => {
-                if args.len() == 1 {
-                    let arg0 = eval(&args[0], env)?;
-                    if let Exp::Bool(true) = arg0 {
-                        Ok(Exp::Bool(true))
-                    } else {
-                        Err(Exception { etype: ExceptionType::AssertionFailed, message: format!("assertion failed: '{}'", to_string::to_string(&args[0])), backtrace: vec!() })
-                    }
+                assert_arg_length_is(&args, 1, "assert!")?;
+                let arg0 = eval(&args[0], env)?;
+                if let Exp::Bool(true) = arg0 {
+                    Ok(Exp::Bool(true))
                 } else {
-                    Err(Exception { 
-                        etype: ExceptionType::ArgumentError,
-                        message: format!("assert! expected 1 argument but got {}", args.len()),
-                        backtrace: vec!()
-                    })
+                    Err(Exception { etype: ExceptionType::AssertionFailed, message: format!("assertion failed: '{}'", to_string::to_string(&args[0])), backtrace: vec!() })
                 }
             },
             BuiltIn::Defun => {
-                if args.len() > 1 {
-                    if let Exp::Atom(name) = &args[0] {
-                        if let Exp::List(arg_list) = &args[1] {
-                            let function = Exp::Function(Function { 
-                                arg_names: arg_list.to_vec(), 
-                                body_exps: args[2..].to_vec(), 
-                                self_name: Some(name.to_string())
-                            });
-                            env.set(name.to_string(), function.clone());
-                            Ok(function)
-                        } else {
-                            Err(Exception { etype: ExceptionType::ArgumentError, message: "second argument to defun must be a list of atoms".to_owned(), backtrace: vec!() })
-                        }
+                assert_arg_length_at_least(&args, 2, "defun")?;
+                if let Exp::Atom(name) = &args[0] {
+                    if let Exp::List(arg_list) = &args[1] {
+                        let function = Exp::Function(Function { 
+                            arg_names: arg_list.to_vec(), 
+                            body_exps: args[2..].to_vec(), 
+                            self_name: Some(name.to_string())
+                        });
+                        env.set(name.to_string(), function.clone());
+                        Ok(function)
                     } else {
-                        Err(Exception { etype: ExceptionType::ArgumentError, message: "first argument to defun must be an atom".to_owned(), backtrace: vec!() })
+                        Err(Exception { etype: ExceptionType::ArgumentError, message: "second argument to defun must be a list of atoms".to_owned(), backtrace: vec!() })
                     }
                 } else {
-                    Err(Exception { 
-                        etype: ExceptionType::ArgumentError,
-                        message: format!("defun expected at least 2 arguments but got {}", args.len()),
-                        backtrace: vec!()
-                    })
+                    Err(Exception { etype: ExceptionType::ArgumentError, message: "first argument to defun must be an atom".to_owned(), backtrace: vec!() })
                 }
             }
             BuiltIn::Add => {
@@ -145,31 +134,23 @@ impl Callable for BuiltIn {
                 Ok(Exp::Int(result))
             },
             BuiltIn::Subtract => {
-                if args.len() > 0 {
-                    let arg0 =  eval(&args[0], env)?;
-                    if let Exp::Int(i) = arg0 {
-                        let mut result: i32 = i;
-                        for arg in &args[1..] {
-                            let arg_v = eval(&arg, env)?;
-                            if let Exp::Int(i) = arg_v {
-                                result -= i;
-                            }
+                assert_arg_length_at_least(&args, 1, "-")?;
+                let arg0 =  eval(&args[0], env)?;
+                if let Exp::Int(i) = arg0 {
+                    let mut result: i32 = i;
+                    for arg in &args[1..] {
+                        let arg_v = eval(&arg, env)?;
+                        if let Exp::Int(i) = arg_v {
+                            result -= i;
                         }
-                        Ok(Exp::Int(result))
-                    } else {
-                        return Err(Exception {
-                            etype: ExceptionType::ArgumentError,
-                            message: "all arguments to - must be integers".to_owned(),
-                            backtrace: vec!()
-                        })
                     }
+                    Ok(Exp::Int(result))
                 } else {
                     return Err(Exception {
                         etype: ExceptionType::ArgumentError,
-                        message: format!("- expected at least 1 argument but got {}", args.len()),
+                        message: "all arguments to - must be integers".to_owned(),
                         backtrace: vec!()
                     })
-
                 }
             },
             BuiltIn::Inspect => {
@@ -393,7 +374,7 @@ mod tests {
                          "all arguments to - must be integers",
                          ExceptionType::ArgumentError);
         assert_exception(result_of("(-)").unwrap_err(),
-                         "- expected at least 1 argument but got 0",
+                         "- expected at least 1 arguments but got 0",
                          ExceptionType::ArgumentError);
     }
 
