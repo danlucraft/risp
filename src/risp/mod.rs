@@ -7,3 +7,4 @@ pub mod environment;
 pub mod builtins;
 pub mod loader;
 pub mod exceptions;
+pub mod prelude;
