@@ -61,7 +61,17 @@ pub fn eval<'a>(exp: &Exp, env: &mut Env) -> Result<Exp, Exception> {
                                 }
                             }
                         },
-                        Exp::Function(function) => function.call(v[1..].to_vec(), env),
+                        Exp::Function(function) => {
+                            let func_result = function.call(v[1..].to_vec(), env);
+                            match func_result {
+                                Ok(e) => Ok(e),
+                                Err(exc) => {
+                                    let mut new_ex = exc.clone();
+                                    new_ex.backtrace.push(exp.clone());
+                                    Err(new_ex)
+                                }
+                            }
+                        }
                         Exp::Atom(a) => Err(Exception { etype: ExceptionType::UncallableCalled, message: a.to_string(), backtrace: vec!(exp.clone()) }),
                         Exp::Int(a)  => Err(Exception { etype: ExceptionType::UncallableCalled, message: a.to_string(), backtrace: vec!(exp.clone()) }),
                         Exp::Bool(a) => Err(Exception { etype: ExceptionType::UncallableCalled, message: a.to_string(), backtrace: vec!(exp.clone()) }),
